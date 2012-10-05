@@ -584,11 +584,11 @@ WindowManager.prototype = {
                     return;
                 }
                 else { // if we can't find an origin on a window list
-                    effect = "fade";
+                    effect = "scale";
                 }
             } // if window list doesn't support finding an origin
             else {
-                effect = "fade";
+                effect = "scale";
             }
         }
         

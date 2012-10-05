@@ -6,6 +6,7 @@ const Meta = imports.gi.Meta;
 const St = imports.gi.St;
 const Cinnamon = imports.gi.Cinnamon;
 
+const AppletManager = imports.ui.appletManager;
 const AltTab = imports.ui.altTab;
 const Main = imports.ui.main;
 const Tweener = imports.ui.tweener;
@@ -247,10 +248,25 @@ WindowManager.prototype = {
             else {
                 monitor = Main.layoutManager.primaryMonitor;
                 yDest = 0;
-            }            
+            }
+
             let xDest = monitor.x + monitor.width/4;
             if (St.Widget.get_default_direction() == St.TextDirection.RTL)
-                xDest = monitor.width - monitor.width/4;        
+                xDest = monitor.width - monitor.width/4;
+
+            if (AppletManager.get_role_provider_exists(AppletManager.Roles.WINDOWLIST)) {
+                let windowApplet = AppletManager.get_role_provider(AppletManager.Roles.WINDOWLIST);
+                let actorOrigin = windowApplet.getOriginFromWindow(actor.get_meta_window());
+                
+                if (actorOrigin !== false) {
+                    [xDest, yDest] = actorOrigin.get_transformed_position();
+                    // Adjust horizontal destination or it'll appear to zoom
+                    // down to our button's left (or right in RTL) edge.
+                    // To center it, we'll add half its width.
+                    xDest += actorOrigin.get_transformed_size()[0] / 2;
+                }
+            }
+            
             Tweener.addTween(actor,
                              { scale_x: 0.0,
                                scale_y: 0.0,

@@ -551,14 +551,13 @@ WindowManager.prototype = {
             let xSrc, ySrc, xDest, yDest;
             [xDest, yDest] = actor.get_transformed_position();
 
-            actor.set_scale(0.0, 0.0);
-            this._mapping.push(actor);
-
             if (AppletManager.get_role_provider_exists(AppletManager.Roles.WINDOWLIST)) {
                 let windowApplet = AppletManager.get_role_provider(AppletManager.Roles.WINDOWLIST);
                 let actorOrigin = windowApplet.getOriginFromWindow(actor.get_meta_window());
 
                 if (actorOrigin !== false) {
+                    actor.set_scale(0.0, 0.0);
+                    this._mapping.push(actor);
                     [xSrc, ySrc] = actorOrigin.get_transformed_position();
                     // Adjust horizontal destination or it'll appear to zoom
                     // down to our button's left (or right in RTL) edge.

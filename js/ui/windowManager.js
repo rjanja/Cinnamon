@@ -237,7 +237,6 @@ WindowManager.prototype = {
                 
         if (effect == "traditional") {  
             actor.set_scale(1.0, 1.0);
-            actor.move_anchor_point_from_gravity(Clutter.Gravity.CENTER);        
             this._minimizing.push(actor);
             let monitor;
             let yDest;            
@@ -547,7 +546,53 @@ WindowManager.prototype = {
         catch(e) {
             log(e);
         }
-                
+        
+        if (effect == "traditional") {
+            let xSrc, ySrc, xDest, yDest;
+            [xDest, yDest] = actor.get_transformed_position();
+
+            actor.set_scale(0.0, 0.0);
+            this._mapping.push(actor);
+
+            if (AppletManager.get_role_provider_exists(AppletManager.Roles.WINDOWLIST)) {
+                let windowApplet = AppletManager.get_role_provider(AppletManager.Roles.WINDOWLIST);
+                let actorOrigin = windowApplet.getOriginFromWindow(actor.get_meta_window());
+
+                if (actorOrigin !== false) {
+                    [xSrc, ySrc] = actorOrigin.get_transformed_position();
+                    // Adjust horizontal destination or it'll appear to zoom
+                    // down to our button's left (or right in RTL) edge.
+                    // To center it, we'll add half its width.
+                    xSrc += actorOrigin.get_transformed_size()[0] / 2;
+
+                    actor.set_position(xSrc, ySrc);
+                    actor.show();
+
+                    Tweener.addTween(actor,
+                                     { scale_x: 1.0,
+                                       scale_y: 1.0,
+                                       x: xDest,
+                                       y: yDest,
+                                       time: time,
+                                       transition: transition,
+                                       onComplete: this._mapWindowDone,
+                                       onCompleteScope: this,
+                                       onCompleteParams: [cinnamonwm, actor],
+                                       onOverwrite: this._mapWindowOverwrite,
+                                       onOverwriteScope: this,
+                                       onOverwriteParams: [cinnamonwm, actor]
+                                     });
+                    return;
+                }
+                else { // if we can't find an origin on a window list
+                    effect = "fade";
+                }
+            } // if window list doesn't support finding an origin
+            else {
+                effect = "fade";
+            }
+        }
+        
         if (effect == "fade") {            
             this._mapping.push(actor);
             actor.opacity = 0;

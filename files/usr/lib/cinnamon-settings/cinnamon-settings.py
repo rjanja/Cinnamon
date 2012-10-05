@@ -2011,7 +2011,7 @@ class MainWindow:
         label = Gtk.Label()
         label.set_markup("%s" % _("Mapping windows:"))
         box.add(label)
-        effects = [["none", _("None")], ["scale", _("Scale")], ["fade", _("Fade")]]        
+        effects = [["none", _("None")], ["traditional", _("Traditional")], ["scale", _("Scale")], ["fade", _("Fade")]]        
         box.add(GSettingsComboBox("", "org.cinnamon", "desktop-effects-map-effect", "org.cinnamon/desktop-effects", effects))
         box.add(GSettingsComboBox("", "org.cinnamon", "desktop-effects-map-transition", "org.cinnamon/desktop-effects", transition_effects))
         box.add(GSettingsSpinButton("", "org.cinnamon", "desktop-effects-map-time", "org.cinnamon/desktop-effects", 0, 2000, 50, 200, _("milliseconds")))

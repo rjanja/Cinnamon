@@ -134,7 +134,7 @@
       <default>"scale"</default>
       <_summary>Effect used when mapping windows</_summary>
       <_description>
-       An effect: traditional, scale, fade, none
+       An effect: scale, fade, none
       </_description>
     </key>
     

@@ -265,6 +265,9 @@ WindowManager.prototype = {
                     // We use the allocation box because otherwise our
                     // pseudo-class ":focus" may be larger when not minimized.
                     xDest += actorOrigin.get_allocation_box().get_size()[0] / 2;
+                    actor.get_meta_window()._cinnamonwm_has_origin = true;
+                    actor.get_meta_window()._cinnamonwm_minimize_transition = transition;
+                    actor.get_meta_window()._cinnamonwm_minimize_time = time;
                 }
             }
             
@@ -549,11 +552,13 @@ WindowManager.prototype = {
             log(e);
         }
         
-        if (effect == "traditional") {
+        if (actor.get_meta_window()._cinnamonwm_has_origin === true) {
+            /* "traditional" minimize mapping has been applied, do the converse un-minimize */
             let xSrc, ySrc, xDest, yDest;
             [xDest, yDest] = actor.get_transformed_position();
 
-            if (AppletManager.get_role_provider_exists(AppletManager.Roles.WINDOWLIST)) {
+            if (AppletManager.get_role_provider_exists(AppletManager.Roles.WINDOWLIST))
+            {
                 let windowApplet = AppletManager.get_role_provider(AppletManager.Roles.WINDOWLIST);
                 let actorOrigin = windowApplet.getOriginFromWindow(actor.get_meta_window());
                 
@@ -569,13 +574,15 @@ WindowManager.prototype = {
                     actor.set_position(xSrc, ySrc);
                     actor.show();
 
+                    let myTransition = actor.get_meta_window()._cinnamonwm_minimize_transition||transition;
+                    let myTime = actor.get_meta_window()._cinnamonwm_minimize_time||time;
                     Tweener.addTween(actor,
                                      { scale_x: 1.0,
                                        scale_y: 1.0,
                                        x: xDest,
                                        y: yDest,
-                                       time: time,
-                                       transition: transition,
+                                       time: myTime,
+                                       transition: myTransition,
                                        onComplete: this._mapWindowDone,
                                        onCompleteScope: this,
                                        onCompleteParams: [cinnamonwm, actor],
@@ -585,13 +592,7 @@ WindowManager.prototype = {
                                      });
                     return;
                 }
-                else { // if we can't find an origin on a window list
-                    effect = "scale";
-                }
             } // if window list doesn't support finding an origin
-            else {
-                effect = "scale";
-            }
         }
         
         if (effect == "fade") {            

@@ -1,7 +1,6 @@
 const Applet = imports.ui.applet;
 const Clutter = imports.gi.Clutter;
 const Lang = imports.lang;
-const Mainloop = imports.mainloop;
 const Cinnamon = imports.gi.Cinnamon;
 const St = imports.gi.St;
 const Main = imports.ui.main;
@@ -890,21 +889,19 @@ MyApplet.prototype = {
     },
 
     _windowAdded: function(metaWorkspace, metaWindow) {
-        Mainloop.idle_add(Lang.bind(this, function() {
-            if (!this.isInteresting(metaWindow))
+        if (!this.isInteresting(metaWindow))
+            return;        
+        for ( let i=0; i<this._windows.length; ++i ) {
+            if ( this._windows[i].metaWindow == metaWindow ) {
                 return;
-            for ( let i=0; i<this._windows.length; ++i ) {
-                if ( this._windows[i].metaWindow == metaWindow ) {
-                    return;
-                }
             }
+        }
 
-            let appbutton = new AppMenuButton(this, metaWindow, true, this.orientation, this._panelHeight);
-            this._windows.push(appbutton);
-            this.myactor.add(appbutton.actor);
-            if (metaWorkspace.index() != global.screen.get_active_workspace_index())
-                appbutton.actor.hide();
-        }));
+        let appbutton = new AppMenuButton(this, metaWindow, true, this.orientation, this._panelHeight);
+        this._windows.push(appbutton);
+        this.myactor.add(appbutton.actor);
+        if (metaWorkspace.index() != global.screen.get_active_workspace_index())
+            appbutton.actor.hide();
     },
 
     _windowRemoved: function(metaWorkspace, metaWindow) {

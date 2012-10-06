@@ -265,6 +265,7 @@ WindowManager.prototype = {
                     // We use the allocation box because otherwise our
                     // pseudo-class ":focus" may be larger when not minimized.
                     xDest += actorOrigin.get_allocation_box().get_size()[0] / 2;
+                    actor.get_meta_window()._cinnamonwm_minimized = true;
                 }
             }
             
@@ -553,7 +554,9 @@ WindowManager.prototype = {
             let xSrc, ySrc, xDest, yDest;
             [xDest, yDest] = actor.get_transformed_position();
 
-            if (AppletManager.get_role_provider_exists(AppletManager.Roles.WINDOWLIST)) {
+            if (actor.get_meta_window()._cinnamonwm_minimized === true &&
+                AppletManager.get_role_provider_exists(AppletManager.Roles.WINDOWLIST))
+            {
                 let windowApplet = AppletManager.get_role_provider(AppletManager.Roles.WINDOWLIST);
                 let actorOrigin = windowApplet.getOriginFromWindow(actor.get_meta_window());
                 

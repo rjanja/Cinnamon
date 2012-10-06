@@ -572,13 +572,16 @@ WindowManager.prototype = {
                     actor.set_position(xSrc, ySrc);
                     actor.show();
 
+                    let myTransition = global.settings.get_string("desktop-effects-minimize-transition")||transition;
+                    let settingsTime = global.settings.get_int("desktop-effects-minimize-time")/1000;
+                    let myTime = settingsTime || time;
                     Tweener.addTween(actor,
                                      { scale_x: 1.0,
                                        scale_y: 1.0,
                                        x: xDest,
                                        y: yDest,
-                                       time: time,
-                                       transition: transition,
+                                       time: myTime,
+                                       transition: myTransition,
                                        onComplete: this._mapWindowDone,
                                        onCompleteScope: this,
                                        onCompleteParams: [cinnamonwm, actor],

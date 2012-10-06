@@ -890,7 +890,7 @@ MyApplet.prototype = {
     },
 
     _windowAdded: function(metaWorkspace, metaWindow) {
-        Mainloop.timeout_add(10, Lang.bind(this, function() {
+        Mainloop.idle_add(Lang.bind(this, function() {
             if (!this.isInteresting(metaWindow))
                 return;
             for ( let i=0; i<this._windows.length; ++i ) {

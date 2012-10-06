@@ -266,6 +266,8 @@ WindowManager.prototype = {
                     // pseudo-class ":focus" may be larger when not minimized.
                     xDest += actorOrigin.get_allocation_box().get_size()[0] / 2;
                     actor.get_meta_window()._cinnamonwm_has_origin = true;
+                    actor.get_meta_window()._cinnamonwm_minimize_transition = transition;
+                    actor.get_meta_window()._cinnamonwm_minimize_time = time;
                 }
             }
             
@@ -572,9 +574,8 @@ WindowManager.prototype = {
                     actor.set_position(xSrc, ySrc);
                     actor.show();
 
-                    let myTransition = global.settings.get_string("desktop-effects-minimize-transition")||transition;
-                    let settingsTime = global.settings.get_int("desktop-effects-minimize-time")/1000;
-                    let myTime = settingsTime || time;
+                    let myTransition = actor.get_meta_window()._cinnamonwm_minimize_transition||transition;
+                    let myTime = actor.get_meta_window()._cinnamonwm_minimize_time||time;
                     Tweener.addTween(actor,
                                      { scale_x: 1.0,
                                        scale_y: 1.0,

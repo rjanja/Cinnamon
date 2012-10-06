@@ -262,7 +262,9 @@ WindowManager.prototype = {
                     // Adjust horizontal destination or it'll appear to zoom
                     // down to our button's left (or right in RTL) edge.
                     // To center it, we'll add half its width.
-                    xDest += actorOrigin.get_transformed_size()[0] / 2;
+                    // We use the allocation box because otherwise our
+                    // pseudo-class ":focus" may be larger when not minimized.
+                    xDest += actorOrigin.get_allocation_box().get_size()[0] / 2;
                 }
             }
             
@@ -554,16 +556,16 @@ WindowManager.prototype = {
             if (AppletManager.get_role_provider_exists(AppletManager.Roles.WINDOWLIST)) {
                 let windowApplet = AppletManager.get_role_provider(AppletManager.Roles.WINDOWLIST);
                 let actorOrigin = windowApplet.getOriginFromWindow(actor.get_meta_window());
-
+                
                 if (actorOrigin !== false) {
+
                     actor.set_scale(0.0, 0.0);
                     this._mapping.push(actor);
                     [xSrc, ySrc] = actorOrigin.get_transformed_position();
                     // Adjust horizontal destination or it'll appear to zoom
                     // down to our button's left (or right in RTL) edge.
                     // To center it, we'll add half its width.
-                    xSrc += actorOrigin.get_transformed_size()[0] / 2;
-
+                    xSrc += actorOrigin.get_allocation_box().get_size()[0] / 2;
                     actor.set_position(xSrc, ySrc);
                     actor.show();
 

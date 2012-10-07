@@ -234,8 +234,15 @@ WindowManager.prototype = {
         catch(e) {
             log(e);
         }
-                
-        if (effect == "traditional") {  
+
+        if (actor.get_meta_window()._cinnamonwm_has_origin) {
+            // reset all cached values in case "traditional" is no longer in effect
+            actor.get_meta_window()._cinnamonwm_has_origin = false;
+            actor.get_meta_window()._cinnamonwm_minimize_transition = undefined;
+            actor.get_meta_window()._cinnamonwm_minimize_time = undefined;
+        }
+
+        if (effect == "traditional") {
             actor.set_scale(1.0, 1.0);
             this._minimizing.push(actor);
             let monitor;
@@ -563,7 +570,6 @@ WindowManager.prototype = {
                 let actorOrigin = windowApplet.getOriginFromWindow(actor.get_meta_window());
                 
                 if (actorOrigin !== false) {
-
                     actor.set_scale(0.0, 0.0);
                     this._mapping.push(actor);
                     [xSrc, ySrc] = actorOrigin.get_transformed_position();
@@ -575,7 +581,8 @@ WindowManager.prototype = {
                     actor.show();
 
                     let myTransition = actor.get_meta_window()._cinnamonwm_minimize_transition||transition;
-                    let myTime = actor.get_meta_window()._cinnamonwm_minimize_time||time;
+                    let lastTime = actor.get_meta_window()._cinnamonwm_minimize_time;
+                    let myTime = typeof(lastTime) !== "undefined" ? lastTime : time;
                     Tweener.addTween(actor,
                                      { scale_x: 1.0,
                                        scale_y: 1.0,

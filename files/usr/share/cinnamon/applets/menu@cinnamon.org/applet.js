@@ -93,6 +93,14 @@ VisibleChildIterator.prototype = {
         return this.visible_children[this._num_children-1];
     },
 
+    getVisibleIndex: function(cur_child) {
+        return this.visible_children.indexOf(cur_child);
+    },
+
+    getVisibleItem: function(index) {
+        return this.visible_children[index];
+    },
+
     getNumVisibleChildren: function() {
         return this._num_children;
     },
@@ -718,6 +726,7 @@ MyApplet.prototype = {
             this._selectedItemIndex = null;
             this._previousTreeItemIndex = null;
             this._previousSelectedActor = null;
+            this._previousVisibleIndex = null;
             this._previousTreeSelectedActor = null;
             this._activeContainer = null;
             this._activeActor = null;
@@ -869,10 +878,11 @@ MyApplet.prototype = {
             if (this._activeContainer==this.applicationsBox) {
                 this._previousSelectedActor = this.applicationsBox.get_child_at_index(index);
                 item_actor = this.appBoxIter.getPrevVisible(this._previousSelectedActor);
+                this._previousVisibleIndex = this.appBoxIter.getVisibleIndex(item_actor);
                 index = this.appBoxIter.getAbsoluteIndexOfChild(item_actor);
             } else {
-                this._previousSelectedActor = this.categoriesBox.get_child_at_index(index);
-                this._previousSelectedActor._delegate.isHovered = false;
+                this._previousTreeSelectedActor = this.categoriesBox.get_child_at_index(index);
+                this._previousTreeSelectedActor._delegate.isHovered = false;
                 item_actor = this.catBoxIter.getPrevVisible(this._activeActor)
                 index = this.catBoxIter.getAbsoluteIndexOfChild(item_actor);
             }
@@ -880,20 +890,27 @@ MyApplet.prototype = {
             if (this._activeContainer==this.applicationsBox) {
                 this._previousSelectedActor = this.applicationsBox.get_child_at_index(index);
                 item_actor = this.appBoxIter.getNextVisible(this._previousSelectedActor);
+                this._previousVisibleIndex = this.appBoxIter.getVisibleIndex(item_actor);
                 index = this.appBoxIter.getAbsoluteIndexOfChild(item_actor);
             } else {
-                this._previousSelectedActor = this.categoriesBox.get_child_at_index(index);
-                this._previousSelectedActor._delegate.isHovered = false;
+                this._previousTreeSelectedActor = this.categoriesBox.get_child_at_index(index);
+                this._previousTreeSelectedActor._delegate.isHovered = false;
                 item_actor = this.catBoxIter.getNextVisible(this._activeActor)
                 index = this.catBoxIter.getAbsoluteIndexOfChild(item_actor);
+                this._previousTreeSelectedActor._delegate.emit('leave-event');
             }
         } else if (symbol == Clutter.KEY_Right && (this._activeContainer !== this.applicationsBox)) {
-            item_actor = this.appBoxIter.getFirstVisible();
+            if (this._previousVisibleIndex !== null) {
+                item_actor = this.appBoxIter.getVisibleItem(this._previousVisibleIndex);
+            } else {
+                item_actor = this.appBoxIter.getFirstVisible();
+            }
             index = this.appBoxIter.getAbsoluteIndexOfChild(item_actor);
         } else if (symbol == Clutter.KEY_Left && this._activeContainer === this.applicationsBox && !this.searchActive) {
             this._previousSelectedActor = this.applicationsBox.get_child_at_index(index);
             item_actor = (this._previousTreeSelectedActor != null) ? this._previousTreeSelectedActor : this.catBoxIter.getFirstVisible();
             index = this.catBoxIter.getAbsoluteIndexOfChild(item_actor);
+            this._previousTreeSelectedActor = item_actor;
         } else if (this._activeContainer === this.applicationsBox && (symbol == Clutter.KEY_Return || symbol == Clutter.KP_Enter)) {
             item_actor = this.applicationsBox.get_child_at_index(this._selectedItemIndex);
             item_actor._delegate.activate();
@@ -950,8 +967,17 @@ MyApplet.prototype = {
     },
 
     _clearPrevCatSelection: function(actor) {
-        if (this._previousSelectedActor && this._previousSelectedActor != actor) {
-            this._previousSelectedActor.style_class = "menu-category-button";
+        if (this._previousTreeSelectedActor && this._previousTreeSelectedActor != actor) {
+            this._previousTreeSelectedActor.style_class = "menu-category-button";
+            
+            if (this._previousTreeSelectedActor._delegate) {
+                this._previousTreeSelectedActor._delegate.emit('leave-event');
+            }
+
+            if (actor !== undefined) {
+                this._previousVisibleIndex = null;
+                this._previousTreeSelectedActor = actor;
+            }
         }
     },
     
@@ -1041,7 +1067,17 @@ MyApplet.prototype = {
                             if (!this.searchActive) {
                                 categoryButton.actor.style_class = "menu-category-button";
                             }
-                            this._previousSelectedActor = categoryButton.actor;
+
+                            if (this._previousTreeSelectedActor === null) {
+                                this._previousTreeSelectedActor = categoryButton.actor;
+                            } else {
+                                let prevIdx = this.catBoxIter.getVisibleIndex(this._previousTreeSelectedActor);
+                                let nextIdx = this.catBoxIter.getVisibleIndex(categoryButton.actor);
+                                if (Math.abs(prevIdx - nextIdx) <= 1) {
+                                    this._previousTreeSelectedActor = categoryButton.actor;
+                                }
+                            }
+                            
                             categoryButton.isHovered = false;
                       }));
                       this.categoriesBox.add_actor(categoryButton.actor);
@@ -1083,7 +1119,19 @@ MyApplet.prototype = {
                 if (!this.searchActive) {
                     this.placesButton.actor.style_class = "menu-category-button";
                 }
-                this._previousSelectedActor = this.placesButton.actor;
+
+                if (this._previousTreeSelectedActor === null) {
+                    this._previousTreeSelectedActor = this.placesButton.actor;
+                } else {
+                    let prevIdx = this.catBoxIter.getVisibleIndex(this._previousTreeSelectedActor);
+                    let nextIdx = this.catBoxIter.getVisibleIndex(this.placesButton.actor);
+                    let idxDiff = Math.abs(prevIdx - nextIdx);
+                    let numVisible = this.catBoxIter.getNumVisibleChildren();
+                    if (idxDiff <= 1 || Math.min(prevIdx, nextIdx) < 0) {
+                        this._previousTreeSelectedActor = this.placesButton.actor;
+                    }
+                }
+
                 this.placesButton.isHovered = false;
             }));
             this.categoriesBox.add_actor(this.placesButton.actor);
@@ -1131,7 +1179,19 @@ MyApplet.prototype = {
                 if (!this.searchActive) {
                     this.recentButton.actor.style_class = "menu-category-button";
                 }
-                this._previousSelectedActor = this.recentButton.actor;
+                
+                if (this._previousTreeSelectedActor === null) {
+                    this._previousTreeSelectedActor = this.recentButton.actor;
+                } else {
+                    let prevIdx = this.catBoxIter.getVisibleIndex(this._previousTreeSelectedActor);
+                    let nextIdx = this.catBoxIter.getVisibleIndex(this.recentButton.actor);
+                    let numVisible = this.catBoxIter.getNumVisibleChildren();
+                    
+                    if (Math.abs(prevIdx - nextIdx) <= 1) {
+                        this._previousTreeSelectedActor = this.recentButton.actor;
+                    }
+                }
+
                 this.recentButton.isHovered = false;
             }));
             this.categoriesBox.add_actor(this.recentButton.actor);
@@ -1194,6 +1254,7 @@ MyApplet.prototype = {
                 this._favoritesButtons[app] = button;
                 favoritesBox.actor.add_actor(button.actor, { y_align: St.Align.END, y_fill: false });
                 button.actor.connect('enter-event', Lang.bind(this, function() {
+                   this._clearPrevCatSelection();
                    this.selectedAppTitle.set_text(button.app.get_name());
                    if (button.app.get_description()) this.selectedAppDescription.set_text(button.app.get_description().split("\n")[0]);
                    else this.selectedAppDescription.set_text("");
@@ -1315,6 +1376,7 @@ MyApplet.prototype = {
             this.selectedAppDescription.set_text(applicationButton.app.get_description());
         else
             this.selectedAppDescription.set_text("");
+        this._previousVisibleIndex = this.appBoxIter.getVisibleIndex(applicationButton.actor);
         this._clearPrevAppSelection(applicationButton.actor);
         applicationButton.actor.style_class = "menu-application-button-selected";
         this._scrollToButton(applicationButton);

@@ -18,6 +18,8 @@ const DEFAULT_ICON_SIZE = 16; // too bad this can't be defined in theme (cinnamo
 const SPINNER_ANIMATION_TIME = 1;
 const ICON_HEIGHT_FACTOR = .64;
 
+var g_scaleTextIcons = false;
+var g_panelResizable = false;
 
 function AppMenuButtonRightClickMenu(actor, metaWindow, orientation) {
     this._init(actor, metaWindow, orientation);
@@ -632,18 +634,18 @@ AppMenuButton.prototype = {
     },
 
     set_icon: function(panel_height) {
-      if (global.settings.get_boolean('panel-scale-text-icons') && global.settings.get_boolean('panel-resizable')) {
-        this.iconSize = Math.round(panel_height * ICON_HEIGHT_FACTOR);
-      }
-      else {
-        this.iconSize = DEFAULT_ICON_SIZE;
-      }
-      let icon = this.app ?
-                            this.app.create_icon_texture(this.iconSize) :
-                            new St.Icon({ icon_name: 'application-default-icon',
-                                         icon_type: St.IconType.FULLCOLOR,
-                                         icon_size: this.iconSize });
-      this._iconBox.set_child(icon);
+        let iconSize = g_scaleTextIcons && g_panelResizable ?
+            Math.round(panel_height * ICON_HEIGHT_FACTOR) :
+            DEFAULT_ICON_SIZE;
+        if (iconSize != this.iconSize) {
+            this.iconSize = iconSize;
+            let icon = this.app ?
+                this.app.create_icon_texture(this.iconSize) :
+                new St.Icon({ icon_name: 'application-default-icon',
+                             icon_type: St.IconType.FULLCOLOR,
+                             icon_size: this.iconSize });
+            this._iconBox.set_child(icon);
+        }
     },
 
     getAttention: function() {
@@ -788,52 +790,55 @@ MyApplet.prototype = {
     _init: function(orientation, panel_height) {        
         Applet.Applet.prototype._init.call(this, orientation, panel_height);
         this.actor.set_track_hover(false);
-        try {                    
-            this.orientation = orientation;
-            this.dragInProgress = false;
+        this.orientation = orientation;
+        this.dragInProgress = false;
 
-            this.myactorbox = new MyAppletBox(this);
-            this.leftAlertBox = new MyAppletAlertBox(this);
-            this.rightAlertBox = new MyAppletAlertBox(this);
+        this.myactorbox = new MyAppletBox(this);
+        this.leftAlertBox = new MyAppletAlertBox(this);
+        this.rightAlertBox = new MyAppletAlertBox(this);
 
-            this.myactor = this.myactorbox.actor;
+        this.myactor = this.myactorbox.actor;
 
-            this.actor.add(this.leftAlertBox.actor);
-            this.actor.add(this.myactor);
-            this.actor.add(this.rightAlertBox.actor);
+        this.actor.add(this.leftAlertBox.actor);
+        this.actor.add(this.myactor);
+        this.actor.add(this.rightAlertBox.actor);
 
-            this.actor.reactive = global.settings.get_boolean("panel-edit-mode");
-            this.on_orientation_changed(orientation);
+        this.actor.reactive = global.settings.get_boolean("panel-edit-mode");
+        this.on_orientation_changed(orientation);
 
-            this._windows = new Array();
-            this._alertWindows = new Array();
-            let tracker = Cinnamon.WindowTracker.get_default();
-            tracker.connect('notify::focus-app', Lang.bind(this, this._onFocus));
+        this._windows = new Array();
+        this._alertWindows = new Array();
+        let tracker = Cinnamon.WindowTracker.get_default();
+        tracker.connect('notify::focus-app', Lang.bind(this, this._onFocus));
 
-            this.switchWorkspaceHandler = global.window_manager.connect('switch-workspace',
-                                            Lang.bind(this, this._refreshItems));
-            global.window_manager.connect('minimize',
-                                            Lang.bind(this, this._onMinimize));
-            global.window_manager.connect('maximize',
-                                            Lang.bind(this, this._onMaximize));
-            global.window_manager.connect('unmaximize',
-                                            Lang.bind(this, this._onMaximize));
-            global.window_manager.connect('map',
-                                            Lang.bind(this, this._onMap));
-                                            
-            this._workspaces = [];
-            this._changeWorkspaces();
-            global.screen.connect('notify::n-workspaces',
-                                    Lang.bind(this, this._changeWorkspaces));
-            this._urgent_signal = null;
-            global.settings.connect('changed::window-list-applet-alert', Lang.bind(this, this._updateAttentionGrabber));
-            this._updateAttentionGrabber();
-            // this._container.connect('allocate', Lang.bind(Main.panel, this._allocateBoxes)); 
-            global.settings.connect('changed::panel-edit-mode', Lang.bind(this, this.on_panel_edit_mode_changed));
-        }
-        catch (e) {
-            global.logError(e);
-        }
+        this.switchWorkspaceHandler = global.window_manager.connect('switch-workspace',
+                                        Lang.bind(this, this._refreshItems));
+        global.window_manager.connect('minimize',
+                                        Lang.bind(this, this._onMinimize));
+        global.window_manager.connect('maximize',
+                                        Lang.bind(this, this._onMaximize));
+        global.window_manager.connect('unmaximize',
+                                        Lang.bind(this, this._onMaximize));
+        global.window_manager.connect('map',
+                                        Lang.bind(this, this._onMap));
+                                        
+        this._workspaces = [];
+        this._changeWorkspaces();
+        global.screen.connect('notify::n-workspaces',
+                                Lang.bind(this, this._changeWorkspaces));
+        this._urgent_signal = null;
+        global.settings.connect('changed::window-list-applet-alert', Lang.bind(this, this._updateAttentionGrabber));
+        this._updateAttentionGrabber();
+        global.settings.connect('changed::panel-edit-mode', Lang.bind(this, this.on_panel_edit_mode_changed));
+
+        global.settings.connect('changed::panel-scale-text-icons', this.updatePanelSettings);
+        global.settings.connect('changed::panel-resizable', this.updatePanelSettings);
+        this.updatePanelSettings();
+    },
+
+    updatePanelSettings: function() {
+        g_scaleTextIcons = global.settings.get_boolean('panel-scale-text-icons');
+        g_panelResizable = global.settings.get_boolean('panel-resizable');
     },
 
     on_orientation_changed: function(orientation) {
@@ -927,13 +932,15 @@ MyApplet.prototype = {
     },
 
     on_panel_height_changed: function() {
+        this.updatePanelSettings();
         this._refreshItems();
     },
     
     _refreshItems: function() {
+        let activeIndex = global.screen.get_active_workspace_index();
         for ( let i = 0; i < this._windows.length; ++i ) {
             let metaWindow = this._windows[i].metaWindow;
-            if (metaWindow.get_workspace().index() == global.screen.get_active_workspace_index()
+            if (metaWindow.get_workspace().index() == activeIndex
                       || metaWindow.is_on_all_workspaces())
                 this._windows[i].actor.show();
             else
@@ -969,17 +976,6 @@ MyApplet.prototype = {
     },
     
     _onMap: function(cinnamonwm, actor) {
-    	/* Note by Clem: The call to this._refreshItems() below doesn't look necessary. 
-    	 * When a window is mapped in a quick succession of times (for instance if 
-    	 * the user repeatedly minimize/unminimize the window by clicking on the window list, 
-    	 * or more often when the showDesktop button maps a lot of minimized windows in a quick succession.. 
-    	 * when this happens, many calls to refreshItems are made and this creates a memory leak. 
-    	 * It also slows down all the mapping and so it takes time for all windows to get unminimized after showDesktop is clicked.
-    	 * 
-    	 * For now this was removed. If it needs to be put back, this isn't the place. 
-    	 * If showDesktop needs it, then it should only call it once, not once per window.
-    	 */ 
-        //this._refreshItems();
         this._onWindowStateChange('map', actor);
     },
    

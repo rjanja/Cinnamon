@@ -161,6 +161,36 @@ CommandCompleter.prototype = {
         if (common.length)
             return common.substr(text.length);
         return common;
+    },
+
+    getCompletions: function(text) {
+        let possibles = new Array();
+
+        if (!this._valid) {
+            this._update(0);
+            return common;
+        }
+
+        if (text.length < 3) {
+            return possibles;
+        }
+
+        function _hasPrefix(s1, prefix) {
+            return s1.indexOf(prefix) == 0;
+        }
+        for (let i = 0; i < this._childs.length; i++) {
+            for (let k = 0; k < this._childs[i].length; k++) {
+                if (possibles.length > 5) continue;
+
+                if (!_hasPrefix(this._childs[i][k], text))
+                    continue;
+                else
+                    possibles.push(this._paths[i]+'/'+this._childs[i][k]);
+            }
+        }
+
+        return possibles;
+        
     }
 };
 

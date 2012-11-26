@@ -19,6 +19,8 @@ const Tweener = imports.ui.tweener;
 const DND = imports.ui.dnd;
 const Meta = imports.gi.Meta;
 const DocInfo = imports.misc.docInfo;
+const GLib = imports.gi.GLib;
+const RunDialog = imports.ui.runDialog;
 
 const ICON_SIZE = 16;
 const MAX_FAV_ICON_SIZE = 32;
@@ -229,6 +231,152 @@ GenericApplicationButton.prototype = {
         if (this.menu.isOpen) this.appsMenuButton._scrollToButton(this.menu);
     }
 }
+
+function TransientButton(appsMenuButton, pathOrCommand) {
+    this._init(appsMenuButton, pathOrCommand);
+}
+
+TransientButton.prototype = {
+    __proto__: PopupMenu.PopupSubMenuMenuItem.prototype,
+    
+    _init: function(appsMenuButton, pathOrCommand) {
+        this.pathOrCommand = pathOrCommand;
+        this.isPath = pathOrCommand.substr(pathOrCommand.length - 1) == '/';
+        if (this.isPath) {
+            this.path = pathOrCommand;
+        } else {
+            let n = pathOrCommand.lastIndexOf('/');
+            if (n != 1) {
+                this.path = pathOrCommand.substr(0, n);
+            }
+        }
+
+        this.appsMenuButton = appsMenuButton;
+        PopupMenu.PopupBaseMenuItem.prototype._init.call(this, {hover: false});
+        
+        this.withMenu = true; //withMenu;
+        if (this.withMenu){
+            this.menu = new PopupMenu.PopupSubMenu(this.actor);
+            this.menu.actor.set_style_class_name('menu-context-menu');
+            this.menu.connect('open-state-changed', Lang.bind(this, this._subMenuOpenStateChanged));
+        }
+
+        this.app = {
+            get_app_info: {
+                get_filename: function() {
+                    return pathOrCommand;
+                }
+            },
+            get_id: function() {
+                return -1;
+            },
+            get_description: function() {
+                return pathOrCommand;
+            },
+            get_name: function() {
+                return '';
+            }
+        };
+
+        this.actor.set_style_class_name('menu-application-button');
+
+        let iconName = this.isPath ? 'gnome-folder' : 'unknown';
+        /*let file = Gio.file_new_for_path(this.pathOrCommand);
+        let icon_uri = file.get_uri();
+        let fileInfo = file.query_info(Gio.FILE_ATTRIBUTE_STANDARD_TYPE, Gio.FileQueryInfoFlags.NONE, null);
+        let contentType = fileInfo.get_content_type();
+        this.icon = contentType.get_icon();*/
+        //St.TextureCache.get_default().load_thumbnail(APPLICATION_ICON_SIZE, icon_uri, mime_type);
+        this.icon = new St.Icon({icon_name: iconName, icon_size: APPLICATION_ICON_SIZE, icon_type: St.IconType.FULLCOLOR,});
+        this.addActor(this.icon);
+
+        this.label = new St.Label({ text: this.pathOrCommand, style_class: 'menu-application-button-label' });
+        this.addActor(this.label);
+        this.isDraggableApp = false;
+    },
+    
+    _onButtonReleaseEvent: function (actor, event) {
+        if (event.get_button()==1){
+            this.activate(event);
+        }
+        if (event.get_button()==3){
+            if (this.withMenu && !this.menu.isOpen)
+                this.appsMenuButton.closeApplicationsContextMenus(this.app, true);
+            this.toggleMenu();
+        }
+        return true;
+    },
+    
+    activate: function(event) {
+        //this.app.open_new_window(-1);
+        this.appsMenuButton._run(this.pathOrCommand);
+        this.appsMenuButton.menu.close();
+    },
+    
+    closeMenu: function() {
+        if (this.withMenu) this.menu.close();
+    },
+    
+    toggleMenu: function() {
+        if (!this.withMenu) return;
+        
+        if (!this.menu.isOpen){
+            let children = this.menu.box.get_children();
+            for (var i in children) {
+                this.menu.box.remove_actor(children[i]);
+            }
+            let menuItem;
+
+            if (!this.isPath) {
+                menuItem = new TransientContextMenuItem(this, _("Run in terminal"), "run_in_terminal");
+                this.menu.addMenuItem(menuItem);
+            }
+            
+            menuItem = new TransientContextMenuItem(this, _("Open terminal here"), "open_terminal_here");
+            this.menu.addMenuItem(menuItem);
+        }
+        this.menu.toggle();
+    },
+    
+    _subMenuOpenStateChanged: function() {
+        if (this.menu.isOpen) this.appsMenuButton._scrollToButton(this.menu);
+    }
+}
+
+function TransientContextMenuItem(appButton, label, action) {
+    this._init(appButton, label, action);
+}
+
+TransientContextMenuItem.prototype = {
+    __proto__: PopupMenu.PopupBaseMenuItem.prototype,
+
+    _init: function (appButton, label, action) {
+        PopupMenu.PopupBaseMenuItem.prototype._init.call(this, {focusOnHover: false});
+
+        this._appButton = appButton;
+        this._action = action;
+        this.label = new St.Label({ text: label });
+        this.addActor(this.label);
+    },
+
+    activate: function (event) {
+        switch (this._action){
+            case "run_in_terminal":
+                this._appButton.appsMenuButton._run(this._appButton.pathOrCommand, true);
+                this._appButton.appsMenuButton.menu.close();
+                break;
+            case "open_terminal_here":
+                let cmd = this._appButton.appsMenuButton._terminalSettings.get_string(
+                    RunDialog.EXEC_KEY) + ' --working-directory=' + this._appButton.path;
+                this._appButton.appsMenuButton._run(cmd, false);
+                this._appButton.appsMenuButton.menu.close();
+                break;
+        }
+        this._appButton.toggleMenu();
+        return false;
+    }
+
+};
 
 function ApplicationButton(appsMenuButton, app) {
     this._init(appsMenuButton, app);
@@ -723,6 +871,7 @@ MyApplet.prototype = {
             this._applicationsButtons = new Array();
             this._favoritesButtons = new Array();
             this._placesButtons = new Array();
+            this._transientButtons = new Array();
             this._selectedItemIndex = null;
             this._previousTreeItemIndex = null;
             this._previousSelectedActor = null;
@@ -761,6 +910,21 @@ MyApplet.prototype = {
                 Util.spawnCommandLine("cinnamon-settings menu");
             });
             this._applet_context_menu.addMenuItem(settings_menu_item);
+
+            this._fileFolderAccessActive = false;
+
+            this._pathCompleter = new Gio.FilenameCompleter();
+            this._pathCompleter.set_dirs_only(false);
+            this._commandCompleter = new RunDialog.CommandCompleter();
+            this.lastAcResults = new Array();
+
+            this.searchAutocomplete = global.settings.get_boolean("menu-search-autocomplete");
+
+            global.settings.connect("changed::menu-search-autocomplete", Lang.bind(this, function() {
+                this.searchAutocomplete = global.settings.get_boolean("menu-search-autocomplete");
+            }));
+
+            this._terminalSettings = new Gio.Settings({ schema: RunDialog.TERMINAL_SCHEMA });
         }
         catch (e) {
             global.logError(e);
@@ -915,6 +1079,51 @@ MyApplet.prototype = {
             item_actor = this.applicationsBox.get_child_at_index(this._selectedItemIndex);
             item_actor._delegate.activate();
             return true;
+        } else if (this.searchAutocomplete && (this._fileFolderAccessActive || symbol == Clutter.slash)) {
+            if (symbol == Clutter.Return || symbol == Clutter.KP_Enter) {
+                this.menu.close();
+                if (Cinnamon.get_event_state(event) & Clutter.ModifierType.CONTROL_MASK)
+                    this._run(this.searchEntry.get_text(), true);
+                else
+                    this._run(this.searchEntry.get_text(), false);
+                return true;
+            }
+            if (symbol == Clutter.Escape) {
+                this.searchEntry.set_text('');
+                this._fileFolderAccessActive = false;
+            }
+            if (symbol == Clutter.slash) {
+                // Need preload data before get completion. GFilenameCompleter load content of parent directory.
+                // Parent directory for /usr/include/ is /usr/. So need to add fake name('a').
+                let text = this.searchEntry.get_text().concat('/a');
+                let prefix;
+                if (text.lastIndexOf(' ') == -1)
+                    prefix = text;
+                else
+                    prefix = text.substr(text.lastIndexOf(' ') + 1);
+                this._getCompletion(prefix);
+
+                return false;
+            }
+            if (symbol == Clutter.Tab) {
+                let text = actor.get_text();
+                let prefix;
+                if (text.lastIndexOf(' ') == -1)
+                    prefix = text;
+                else
+                    prefix = text.substr(text.lastIndexOf(' ') + 1);
+                let postfix = this._getCompletion(prefix);
+                if (postfix != null && postfix.length > 0) {
+                    actor.insert_text(postfix, -1);
+                    actor.set_cursor_position(text.length + postfix.length);
+                    if (postfix[postfix.length - 1] == '/')
+                        this._getCompletion(text + postfix + 'a');
+                }
+
+                return true;
+            }
+            return false;
+
         } else {
             return false;
         }
@@ -986,6 +1195,7 @@ MyApplet.prototype = {
         this._applicationsButtons = new Array();
         this._placesButtons = new Array();
         this._recentButtons = new Array();
+        this._transientButtons = new Array();
         this._applicationsBoxWidth = 0;
         //Remove all categories
     	this.categoriesBox.destroy_all_children();
@@ -1528,7 +1738,7 @@ MyApplet.prototype = {
         }
     },
     
-    _displayButtons: function(appCategory, places, recent, apps){
+    _displayButtons: function(appCategory, places, recent, apps, autocompletes){
         if (appCategory) {
             if (appCategory == "all") {
                 this._applicationsButtons.forEach( function (item, index) {
@@ -1620,6 +1830,18 @@ MyApplet.prototype = {
                     }
             });
         }
+        if (autocompletes) {
+            for (let i = 0; i < autocompletes.length; i++) {
+                let button = new TransientButton(this, autocompletes[i]);
+                button.actor.connect('realize', Lang.bind(this, this._onApplicationButtonRealized));
+                button.actor.connect('leave-event', Lang.bind(this, this._appLeaveEvent, button));
+                this._addEnterEvent(button, Lang.bind(this, this._appEnterEvent, button));
+                this._transientButtons.push(button);
+                this.applicationsBox.add_actor(button.actor);
+                button.actor.realize();
+                this.applicationsBox.add_actor(button.menu.actor);
+            }
+        }
     },
 
     _setCategoriesButtonActive: function(active) {         
@@ -1640,6 +1862,7 @@ MyApplet.prototype = {
 
      resetSearch: function(){
         this.searchEntry.set_text("");
+        this._previousSearchPattern = "";
         this.searchActive = false;
         this._clearAllSelections();
         this._setCategoriesButtonActive(true);
@@ -1651,7 +1874,9 @@ MyApplet.prototype = {
             this.menuIsOpening = false;
             return;
         } else {
-            this.searchActive = this.searchEntry.get_text() != '';
+            let searchString = this.searchEntry.get_text();
+            this.searchActive = searchString != '';
+            this._fileFolderAccessActive = this.searchActive && this.searchAutocomplete;
             this._clearAllSelections();
             if (this.searchActive) {
                 this.searchEntry.set_secondary_icon(this._searchActiveIcon);
@@ -1668,6 +1893,7 @@ MyApplet.prototype = {
                     this.searchEntry.disconnect(this._searchIconClickedId);
                 this._searchIconClickedId = 0;
                 this.searchEntry.set_secondary_icon(this._searchInactiveIcon);
+                this._previousSearchPattern = "";
                 this._setCategoriesButtonActive(true);
                 this._select_category(null, this._allAppsCategoryButton);
             }
@@ -1678,8 +1904,14 @@ MyApplet.prototype = {
                 }
                 return;
             }
-            if (this._searchTimeoutId > 0)
+
+            if (this._searchTimeoutId > 0) {
+                if (this._fileFolderAccessActive)
+                    return false;
+
                 return;
+            }
+
             this._searchTimeoutId = Mainloop.timeout_add(150, Lang.bind(this, this._doSearch));
         }
     },
@@ -1754,7 +1986,12 @@ MyApplet.prototype = {
                 recentResults.push(this._recentButtons[i].button_name);
         }
 
-        this._displayButtons(null, placesResults, recentResults, appResults);
+        var acResults = new Array(); // search box autocompletion results
+        if (this.searchAutocomplete) {
+            acResults = this._getCompletions(pattern);
+        }
+
+        this._displayButtons(null, placesResults, recentResults, appResults, acResults);
        
         this.appBoxIter.reloadVisible();
         if (this.appBoxIter.getNumVisibleChildren() > 0) {
@@ -1766,6 +2003,68 @@ MyApplet.prototype = {
             }
         }
         return false;
+    },
+
+    _getCompletion : function(text) {
+        if (text.indexOf('/') != -1) {
+            if (text.substr(text.length - 1) == '/') {
+                return '';
+            } else {
+                return this._pathCompleter.get_completion_suffix(text);
+            }
+        } else {
+            return this._commandCompleter.getCompletion(text);
+        }
+    },
+
+    _getCompletions : function(text) {
+        if (text.indexOf('/') != -1) {
+            return this._pathCompleter.get_completions(text);
+        } else {
+            return this._commandCompleter.getCompletions(text);
+        }
+    },
+
+    _run : function(input, inTerminal) {
+        let command = input;
+
+        if (input) {
+            try {
+                if (inTerminal) {
+                    let exec = this._terminalSettings.get_string(RunDialog.EXEC_KEY);
+                    let exec_arg = this._terminalSettings.get_string(RunDialog.EXEC_ARG_KEY);
+                    command = exec + ' ' + exec_arg + ' ' + input;
+                }
+                Util.trySpawnCommandLine(command);
+            } catch (e) {
+                // Mmmh, that failed - see if @input matches an existing file
+                let path = null;
+                if (input.charAt(0) == '/') {
+                    path = input;
+                } else {
+                    if (input.charAt(0) == '~')
+                        input = input.slice(1);
+                    path = GLib.get_home_dir() + '/' + input;
+                }
+
+                if (GLib.file_test(path, GLib.FileTest.EXISTS)) {
+                    let file = Gio.file_new_for_path(path);
+                    try {
+                        Gio.app_info_launch_default_for_uri(file.get_uri(),
+                                                            global.create_app_launch_context());
+                    } catch (e) {
+                        // The exception from gjs contains an error string like:
+                        //     Error invoking Gio.app_info_launch_default_for_uri: No application
+                        //     is registered as handling this file
+                        // We are only interested in the part after the first colon.
+                        //let message = e.message.replace(/[^:]*: *(.+)/, '$1');
+                        //this._showError(message);
+                    }
+                } else {
+                    //this._showError(e.message);
+                }
+            }
+        }
     }
 };
 

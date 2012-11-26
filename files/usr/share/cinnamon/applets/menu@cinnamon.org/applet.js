@@ -20,7 +20,6 @@ const DND = imports.ui.dnd;
 const Meta = imports.gi.Meta;
 const DocInfo = imports.misc.docInfo;
 const GLib = imports.gi.GLib;
-const RunDialog = imports.ui.runDialog;
 
 const ICON_SIZE = 16;
 const MAX_FAV_ICON_SIZE = 32;
@@ -240,7 +239,12 @@ TransientButton.prototype = {
     __proto__: PopupMenu.PopupSubMenuMenuItem.prototype,
     
     _init: function(appsMenuButton, pathOrCommand) {
-        this.pathOrCommand = pathOrCommand;
+        let displayPath = pathOrCommand;
+        if (pathOrCommand.charAt(0) == '~') {
+            pathOrCommand = pathOrCommand.slice(1);
+            pathOrCommand = GLib.get_home_dir() + pathOrCommand;
+        }
+
         this.isPath = pathOrCommand.substr(pathOrCommand.length - 1) == '/';
         if (this.isPath) {
             this.path = pathOrCommand;
@@ -251,16 +255,13 @@ TransientButton.prototype = {
             }
         }
 
+        this.pathOrCommand = pathOrCommand;
+
         this.appsMenuButton = appsMenuButton;
         PopupMenu.PopupBaseMenuItem.prototype._init.call(this, {hover: false});
-        
-        this.withMenu = true; //withMenu;
-        if (this.withMenu){
-            this.menu = new PopupMenu.PopupSubMenu(this.actor);
-            this.menu.actor.set_style_class_name('menu-context-menu');
-            this.menu.connect('open-state-changed', Lang.bind(this, this._subMenuOpenStateChanged));
-        }
 
+        // We need this fake app to help appEnterEvent/appLeaveEvent 
+        // work with our search result.
         this.app = {
             get_app_info: {
                 get_filename: function() {
@@ -271,26 +272,37 @@ TransientButton.prototype = {
                 return -1;
             },
             get_description: function() {
-                return pathOrCommand;
+                return this.pathOrCommand;
             },
             get_name: function() {
                 return '';
             }
         };
 
-        this.actor.set_style_class_name('menu-application-button');
+        
 
-        let iconName = this.isPath ? 'gnome-folder' : 'unknown';
-        /*let file = Gio.file_new_for_path(this.pathOrCommand);
-        let icon_uri = file.get_uri();
-        let fileInfo = file.query_info(Gio.FILE_ATTRIBUTE_STANDARD_TYPE, Gio.FileQueryInfoFlags.NONE, null);
-        let contentType = fileInfo.get_content_type();
-        this.icon = contentType.get_icon();*/
-        //St.TextureCache.get_default().load_thumbnail(APPLICATION_ICON_SIZE, icon_uri, mime_type);
-        this.icon = new St.Icon({icon_name: iconName, icon_size: APPLICATION_ICON_SIZE, icon_type: St.IconType.FULLCOLOR,});
+        let iconBox = new St.Bin();
+        this.file = Gio.file_new_for_path(this.pathOrCommand);
+
+        try {
+            this.handler = this.file.query_default_handler(null);
+            let icon_uri = this.file.get_uri();
+            let fileInfo = this.file.query_info(Gio.FILE_ATTRIBUTE_STANDARD_TYPE, Gio.FileQueryInfoFlags.NONE, null);
+            let contentType = Gio.content_type_guess(this.pathOrCommand, null);
+            let themedIcon = Gio.content_type_get_icon(contentType[0]);
+            this.icon = new St.Icon({gicon: themedIcon, icon_size: APPLICATION_ICON_SIZE, icon_type: St.IconType.FULLCOLOR });
+            this.actor.set_style_class_name('menu-application-button');
+        } catch (e) {
+            this.handler = null;
+            let iconName = this.isPath ? 'gnome-folder' : 'unknown';
+            this.icon = new St.Icon({icon_name: iconName, icon_size: APPLICATION_ICON_SIZE, icon_type: St.IconType.FULLCOLOR,});
+            // @todo Would be nice to indicate we don't have a handler for this file.
+            this.actor.set_style_class_name('menu-application-button');
+        }
+
         this.addActor(this.icon);
 
-        this.label = new St.Label({ text: this.pathOrCommand, style_class: 'menu-application-button-label' });
+        this.label = new St.Label({ text: displayPath, style_class: 'menu-application-button-label' });
         this.addActor(this.label);
         this.isDraggableApp = false;
     },
@@ -299,84 +311,25 @@ TransientButton.prototype = {
         if (event.get_button()==1){
             this.activate(event);
         }
-        if (event.get_button()==3){
-            if (this.withMenu && !this.menu.isOpen)
-                this.appsMenuButton.closeApplicationsContextMenus(this.app, true);
-            this.toggleMenu();
-        }
         return true;
     },
     
     activate: function(event) {
-        //this.app.open_new_window(-1);
-        this.appsMenuButton._run(this.pathOrCommand);
-        this.appsMenuButton.menu.close();
-    },
-    
-    closeMenu: function() {
-        if (this.withMenu) this.menu.close();
-    },
-    
-    toggleMenu: function() {
-        if (!this.withMenu) return;
-        
-        if (!this.menu.isOpen){
-            let children = this.menu.box.get_children();
-            for (var i in children) {
-                this.menu.box.remove_actor(children[i]);
-            }
-            let menuItem;
-
-            if (!this.isPath) {
-                menuItem = new TransientContextMenuItem(this, _("Run in terminal"), "run_in_terminal");
-                this.menu.addMenuItem(menuItem);
+        if (this.handler != null) {
+            this.handler.launch([this.file], null)
+        } else {
+            // Try anyway, even though we probably shouldn't.
+            try {
+                Util.spawn(['gvfs-open', this.file.get_uri()])
+            } catch (e) {
+                global.logError("No handler available to open " + this.file.get_uri());
             }
             
-            menuItem = new TransientContextMenuItem(this, _("Open terminal here"), "open_terminal_here");
-            this.menu.addMenuItem(menuItem);
         }
-        this.menu.toggle();
-    },
-    
-    _subMenuOpenStateChanged: function() {
-        if (this.menu.isOpen) this.appsMenuButton._scrollToButton(this.menu);
+        
+        this.appsMenuButton.menu.close();
     }
 }
-
-function TransientContextMenuItem(appButton, label, action) {
-    this._init(appButton, label, action);
-}
-
-TransientContextMenuItem.prototype = {
-    __proto__: PopupMenu.PopupBaseMenuItem.prototype,
-
-    _init: function (appButton, label, action) {
-        PopupMenu.PopupBaseMenuItem.prototype._init.call(this, {focusOnHover: false});
-
-        this._appButton = appButton;
-        this._action = action;
-        this.label = new St.Label({ text: label });
-        this.addActor(this.label);
-    },
-
-    activate: function (event) {
-        switch (this._action){
-            case "run_in_terminal":
-                this._appButton.appsMenuButton._run(this._appButton.pathOrCommand, true);
-                this._appButton.appsMenuButton.menu.close();
-                break;
-            case "open_terminal_here":
-                let cmd = this._appButton.appsMenuButton._terminalSettings.get_string(
-                    RunDialog.EXEC_KEY) + ' --working-directory=' + this._appButton.path;
-                this._appButton.appsMenuButton._run(cmd, false);
-                this._appButton.appsMenuButton.menu.close();
-                break;
-        }
-        this._appButton.toggleMenu();
-        return false;
-    }
-
-};
 
 function ApplicationButton(appsMenuButton, app) {
     this._init(appsMenuButton, app);
@@ -915,16 +868,13 @@ MyApplet.prototype = {
 
             this._pathCompleter = new Gio.FilenameCompleter();
             this._pathCompleter.set_dirs_only(false);
-            this._commandCompleter = new RunDialog.CommandCompleter();
             this.lastAcResults = new Array();
 
-            this.searchAutocomplete = global.settings.get_boolean("menu-search-autocomplete");
+            this.searchFilesystem = global.settings.get_boolean("menu-search-filesystem");
 
-            global.settings.connect("changed::menu-search-autocomplete", Lang.bind(this, function() {
-                this.searchAutocomplete = global.settings.get_boolean("menu-search-autocomplete");
+            global.settings.connect("changed::menu-search-filesystem", Lang.bind(this, function() {
+                this.searchFilesystem = global.settings.get_boolean("menu-search-filesystem");
             }));
-
-            this._terminalSettings = new Gio.Settings({ schema: RunDialog.TERMINAL_SCHEMA });
         }
         catch (e) {
             global.logError(e);
@@ -1079,13 +1029,11 @@ MyApplet.prototype = {
             item_actor = this.applicationsBox.get_child_at_index(this._selectedItemIndex);
             item_actor._delegate.activate();
             return true;
-        } else if (this.searchAutocomplete && (this._fileFolderAccessActive || symbol == Clutter.slash)) {
+        } else if (this.searchFilesystem && (this._fileFolderAccessActive || symbol == Clutter.slash)) {
             if (symbol == Clutter.Return || symbol == Clutter.KP_Enter) {
-                this.menu.close();
-                if (Cinnamon.get_event_state(event) & Clutter.ModifierType.CONTROL_MASK)
-                    this._run(this.searchEntry.get_text(), true);
-                else
-                    this._run(this.searchEntry.get_text(), false);
+                if (this._run(this.searchEntry.get_text())) {
+                    this.menu.close();
+                }
                 return true;
             }
             if (symbol == Clutter.Escape) {
@@ -1839,7 +1787,6 @@ MyApplet.prototype = {
                 this._transientButtons.push(button);
                 this.applicationsBox.add_actor(button.actor);
                 button.actor.realize();
-                this.applicationsBox.add_actor(button.menu.actor);
             }
         }
     },
@@ -1876,7 +1823,7 @@ MyApplet.prototype = {
         } else {
             let searchString = this.searchEntry.get_text();
             this.searchActive = searchString != '';
-            this._fileFolderAccessActive = this.searchActive && this.searchAutocomplete;
+            this._fileFolderAccessActive = this.searchActive && this.searchFilesystem;
             this._clearAllSelections();
             if (this.searchActive) {
                 this.searchEntry.set_secondary_icon(this._searchActiveIcon);
@@ -1987,8 +1934,9 @@ MyApplet.prototype = {
         }
 
         var acResults = new Array(); // search box autocompletion results
-        if (this.searchAutocomplete) {
-            acResults = this._getCompletions(pattern);
+        if (this.searchFilesystem) {
+            // Don't use the pattern here, as filesystem is case sensitive
+            acResults = this._getCompletions(this.searchEntryText.get_text());
         }
 
         this._displayButtons(null, placesResults, recentResults, appResults, acResults);
@@ -2012,59 +1960,48 @@ MyApplet.prototype = {
             } else {
                 return this._pathCompleter.get_completion_suffix(text);
             }
-        } else {
-            return this._commandCompleter.getCompletion(text);
         }
     },
 
     _getCompletions : function(text) {
         if (text.indexOf('/') != -1) {
             return this._pathCompleter.get_completions(text);
-        } else {
-            return this._commandCompleter.getCompletions(text);
         }
     },
 
-    _run : function(input, inTerminal) {
+    _run : function(input) {
         let command = input;
 
+        this._commandError = false;
         if (input) {
-            try {
-                if (inTerminal) {
-                    let exec = this._terminalSettings.get_string(RunDialog.EXEC_KEY);
-                    let exec_arg = this._terminalSettings.get_string(RunDialog.EXEC_ARG_KEY);
-                    command = exec + ' ' + exec_arg + ' ' + input;
-                }
-                Util.trySpawnCommandLine(command);
-            } catch (e) {
-                // Mmmh, that failed - see if @input matches an existing file
-                let path = null;
-                if (input.charAt(0) == '/') {
-                    path = input;
-                } else {
-                    if (input.charAt(0) == '~')
-                        input = input.slice(1);
-                    path = GLib.get_home_dir() + '/' + input;
-                }
+            let path = null;
+            if (input.charAt(0) == '/') {
+                path = input;
+            } else {
+                if (input.charAt(0) == '~')
+                    input = input.slice(1);
+                path = GLib.get_home_dir() + '/' + input;
+            }
 
-                if (GLib.file_test(path, GLib.FileTest.EXISTS)) {
-                    let file = Gio.file_new_for_path(path);
-                    try {
-                        Gio.app_info_launch_default_for_uri(file.get_uri(),
-                                                            global.create_app_launch_context());
-                    } catch (e) {
-                        // The exception from gjs contains an error string like:
-                        //     Error invoking Gio.app_info_launch_default_for_uri: No application
-                        //     is registered as handling this file
-                        // We are only interested in the part after the first colon.
-                        //let message = e.message.replace(/[^:]*: *(.+)/, '$1');
-                        //this._showError(message);
-                    }
-                } else {
-                    //this._showError(e.message);
+            if (GLib.file_test(path, GLib.FileTest.EXISTS)) {
+                let file = Gio.file_new_for_path(path);
+                try {
+                    Gio.app_info_launch_default_for_uri(file.get_uri(),
+                                                        global.create_app_launch_context());
+                } catch (e) {
+                    // The exception from gjs contains an error string like:
+                    //     Error invoking Gio.app_info_launch_default_for_uri: No application
+                    //     is registered as handling this file
+                    // We are only interested in the part after the first colon.
+                    //let message = e.message.replace(/[^:]*: *(.+)/, '$1');
+                    return false;
                 }
+            } else {
+                return false;
             }
         }
+
+        return true;
     }
 };
 

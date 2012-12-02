@@ -1453,26 +1453,33 @@ WindowContextMenu.prototype = {
 
         this.metaWindow = metaWindow;
 
-        this.itemCloseWindow = new PopupMenu.PopupMenuItem(_("Close"));
-        this.itemCloseWindow.connect('activate', Lang.bind(this, this._onCloseWindowActivate));
+        let itemCloseWindow = new PopupMenu.PopupMenuItem(_("Close"));
+        itemCloseWindow.connect('activate', Lang.bind(this, this._onCloseWindowActivate));
 
-        if (metaWindow.minimized)
-            this.itemMinimizeWindow = new PopupMenu.PopupMenuItem(_("Restore"));
-        else
-            this.itemMinimizeWindow = new PopupMenu.PopupMenuItem(_("Minimize"));
-        this.itemMinimizeWindow.connect('activate', Lang.bind(this, this._onMinimizeWindowActivate));
+        let itemMinimizeWindow = new PopupMenu.PopupMenuItem(_(metaWindow.minimized ? "Restore" : "Minimize"));
+        itemMinimizeWindow.connect('activate', Lang.bind(this, this._onMinimizeWindowActivate));
 
-        this.itemMaximizeWindow = new PopupMenu.PopupMenuItem(_("Maximize"));
-        this.itemMaximizeWindow.connect('activate', Lang.bind(this, this._onMaximizeWindowActivate));
+        let itemMaximizeWindow = new PopupMenu.PopupMenuItem(_("Maximize"));
+        if (this.metaWindow.get_maximized()) {
+            itemMaximizeWindow.label.set_text(_("Unmaximize"));
+        }
+        itemMaximizeWindow.connect('activate', Lang.bind(this, this._onMaximizeWindowActivate));
 
-        this.itemMoveToLeftWorkspace = new PopupMenu.PopupMenuItem(_("Move to left workspace"));
-        this.itemMoveToLeftWorkspace.connect('activate', Lang.bind(this, this._onMoveToLeftWorkspace));
+        let itemMoveToLeftWorkspace = new PopupMenu.PopupMenuItem(_("Move to left workspace"));
+        if (metaWindow.get_workspace().get_neighbor(Meta.MotionDirection.LEFT) == this.metaWindow.get_workspace())
+            itemMoveToLeftWorkspace.actor.hide();
+        itemMoveToLeftWorkspace.connect('activate', Lang.bind(this, this._onMoveToLeftWorkspace));
 
-        this.itemMoveToRightWorkspace = new PopupMenu.PopupMenuItem(_("Move to right workspace"));
-        this.itemMoveToRightWorkspace.connect('activate', Lang.bind(this, this._onMoveToRightWorkspace));
+        let itemMoveToRightWorkspace = new PopupMenu.PopupMenuItem(_("Move to right workspace"));
+        if (metaWindow.get_workspace().get_neighbor(Meta.MotionDirection.RIGHT) == this.metaWindow.get_workspace())
+            itemMoveToRightWorkspace.actor.hide();
+        itemMoveToRightWorkspace.connect('activate', Lang.bind(this, this._onMoveToRightWorkspace));
 
-        this.itemOnAllWorkspaces = new PopupMenu.PopupMenuItem(_("Visible on all workspaces"));
-        this.itemOnAllWorkspaces.connect('activate', Lang.bind(this, this._toggleOnAllWorkspaces));
+        let itemOnAllWorkspaces = new PopupMenu.PopupMenuItem(_("Visible on all workspaces"));
+        if (metaWindow.is_on_all_workspaces()) {
+            itemOnAllWorkspaces.label.set_text(_("Only on this workspace"));
+        }
+        itemOnAllWorkspaces.connect('activate', Lang.bind(this, this._toggleOnAllWorkspaces));
 
         let itemMoveToNewWorkspace = new PopupMenu.PopupMenuItem(_("Move to a new workspace"));
         itemMoveToNewWorkspace.connect('activate', Lang.bind(this, function() {
@@ -1496,13 +1503,13 @@ WindowContextMenu.prototype = {
 
         let items = monitorItems.concat([
             itemMoveToNewWorkspace,
-            this.itemOnAllWorkspaces,
-            this.itemMoveToLeftWorkspace,
-            this.itemMoveToRightWorkspace,
+            itemOnAllWorkspaces,
+            itemMoveToLeftWorkspace,
+            itemMoveToRightWorkspace,
             new PopupMenu.PopupSeparatorMenuItem(),
-            this.itemMinimizeWindow,
-            this.itemMaximizeWindow,
-            this.itemCloseWindow
+            itemMinimizeWindow,
+            itemMaximizeWindow,
+            itemCloseWindow
         ]);
         (orientation == St.Side.BOTTOM ? items : items.reverse()).forEach(function(item) {
             this.addMenuItem(item);
@@ -1516,27 +1523,6 @@ WindowContextMenu.prototype = {
             this.destroy();
             return;
          }
-
-        if (this.metaWindow.is_on_all_workspaces()) {
-            this.itemOnAllWorkspaces.label.set_text(_("Only on this workspace"));
-        } else {
-            this.itemOnAllWorkspaces.label.set_text(_("Visible on all workspaces"));
-        }
-        if (this.metaWindow.get_workspace().get_neighbor(Meta.MotionDirection.LEFT) != this.metaWindow.get_workspace())
-            this.itemMoveToLeftWorkspace.actor.show();
-        else
-            this.itemMoveToLeftWorkspace.actor.hide();
-
-        if (this.metaWindow.get_workspace().get_neighbor(Meta.MotionDirection.RIGHT) != this.metaWindow.get_workspace())
-            this.itemMoveToRightWorkspace.actor.show();
-        else
-            this.itemMoveToRightWorkspace.actor.hide();
-
-        if (this.metaWindow.get_maximized()) {
-            this.itemMaximizeWindow.label.set_text(_("Unmaximize"));
-        }else{
-            this.itemMaximizeWindow.label.set_text(_("Maximize"));
-        }
     },
 
     _onCloseWindowActivate: function(actor, event){

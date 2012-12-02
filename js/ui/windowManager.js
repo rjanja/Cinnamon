@@ -738,9 +738,6 @@ WindowManager.prototype = {
                 chunk.windows.forEach(function(w) {
                     if (!w.window.is_destroyed()) {
                         w.window.reparent(w.parent);
-                        if (w.isOut) {
-                            w.window.hide();
-                        }
                     }
                 },this);
                 if (killed) {
@@ -784,11 +781,11 @@ WindowManager.prototype = {
                     continue;
 
                 if (window.get_workspace() == from) {
-                    chunk.windows.push({ window: window, isOut: true,
+                    chunk.windows.push({ window: window,
                                               parent: window.get_parent() });
                     window.reparent(chunk.outGroup);
                 } else if (window.get_workspace() == to) {
-                    chunk.windows.push({ window: window, isOut: false,
+                    chunk.windows.push({ window: window,
                                               parent: window.get_parent() });
                     window.reparent(chunk.inGroup);
                 }

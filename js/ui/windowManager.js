@@ -791,7 +791,6 @@ WindowManager.prototype = {
                     chunk.windows.push({ window: window, isOut: false,
                                               parent: window.get_parent() });
                     window.reparent(chunk.inGroup);
-                    window.show_all();
                 }
             }
 

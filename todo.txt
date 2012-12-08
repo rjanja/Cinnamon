@@ -1,0 +1,3 @@
+merge cobinja/cobidev-gsettings-range when rebased
+'git pull https://github.com/rayza/Cinnamon.git patch-1' when rebased
+investigate 'git pull https://github.com/joequant/Cinnamon.git menu_speedup'

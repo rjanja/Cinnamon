@@ -12,6 +12,7 @@ const Main = imports.ui.main;
 const Tweener = imports.ui.tweener;
 const ModalDialog = imports.ui.modalDialog;
 const Tooltips = imports.ui.tooltips;
+const Connector = imports.misc.connector;
 const PointerTracker = imports.misc.pointerTracker;
 const GridNavigator = imports.misc.gridNavigator;
 const WindowUtils = imports.misc.windowUtils;
@@ -48,25 +49,23 @@ ExpoWindowClone.prototype = {
         this.actor._delegate = this;
         this.realWindow = realWindow;
         this.metaWindow = realWindow.meta_window;
+        
+        this.connector = new Connector.Connector();
+        // the "real" window has a different life cycle, so it needs a special connector
+        this.realWindowConnector = new Connector.Connector();
 
-        let positionChangedId = this.realWindow.connect('position-changed',
-                                                          Lang.bind(this, this.onPositionChanged));
-        let sizeChangedId = this.realWindow.connect('position-changed',
-                                                          Lang.bind(this, this.onSizeChanged));
+        this.realWindowConnector.addConnection(this.realWindow, 'position-changed',
+            Lang.bind(this, this.onPositionChanged));
+        this.realWindowConnector.addConnection(this.realWindow, 'position-changed',
+            Lang.bind(this, this.onSizeChanged));
         let orphaned = false;
-        let realWindowDestroyedId = this.realWindow.connect('destroy', Lang.bind(this, function() {
-            orphaned = true;
+        this.realWindowConnector.addConnection(this.realWindow, 'destroy', Lang.bind(this, function() {
+            this.orphaned = true;
+            this.realWindowConnector = null;
         }));
-        let workspaceChangedId = this.metaWindow.connect('workspace-changed', Lang.bind(this, function(w, oldws) {
+        this.connector.addConnection(this.metaWindow, 'workspace-changed', Lang.bind(this, function(w, oldws) {
             this.emit('workspace-changed', oldws);
         }));
-        this.disconnectWindowSignals = function() {
-            this.metaWindow.disconnect(workspaceChangedId);
-            if (orphaned) return;
-            realWindow.disconnect(sizeChangedId);
-            realWindow.disconnect(positionChangedId);
-            realWindow.disconnect(realWindowDestroyedId);
-        };
 
         this.onPositionChanged();
         this.onSizeChanged();
@@ -133,12 +132,8 @@ ExpoWindowClone.prototype = {
         this.icon.add_actor(iconActor);
         iconActor.opacity = ICON_OPACITY;
 
-        let attentionId = global.display.connect('window-demands-attention', Lang.bind(this, this.onWindowDemandsAttention));
-        let urgentId = global.display.connect('window-marked-urgent', Lang.bind(this, this.onWindowDemandsAttention));
-        this.disconnectAttentionSignals = function() {
-            global.display.disconnect(attentionId);
-            global.display.disconnect(urgentId);
-        };
+        this.connector.addConnection(global.display, 'window-demands-attention', Lang.bind(this, this.onWindowDemandsAttention));
+        this.connector.addConnection(global.display, 'window-marked-urgent', Lang.bind(this, this.onWindowDemandsAttention));
         this.urgencyTimeout = 0;
     },
 
@@ -226,8 +221,11 @@ ExpoWindowClone.prototype = {
     },
 
     destroy: function () {
+        this.connector.destroy();
+        if (!this.orphaned) {
+            this.realWindowConnector.destroy();
+        }
         this.killUrgencyTimeout();
-        this.disconnectAttentionSignals();
         this.actor.destroy();
         this.icon.destroy();
     },
@@ -242,7 +240,6 @@ ExpoWindowClone.prototype = {
     },
 
     onDestroy: function() {
-        this.disconnectWindowSignals();
         this.actor._delegate = null;
 
         if (this.inDrag) {
@@ -454,34 +451,25 @@ ExpoWorkspaceThumbnail.prototype = {
             }
         }
 
-        let windowAddedId = this.metaWorkspace.connect('window-added',
-                                                          Lang.bind(this, this.windowAdded));
-        let windowRemovedId = this.metaWorkspace.connect('window-removed',
-                                                           Lang.bind(this, this.windowRemoved));
-        let windowEnteredMonitorId = global.screen.connect('window-entered-monitor',
+        this.connector = new Connector.Connector();
+        this.connector.addConnection(this.metaWorkspace, 'window-added',
+            Lang.bind(this, this.windowAdded));
+        this.connector.addConnection(this.metaWorkspace, 'window-removed',
+            Lang.bind(this, this.windowRemoved));
+        this.connector.addConnection(global.screen, 'window-entered-monitor',
             Lang.bind(this, this.windowEnteredMonitor));
-        let windowLeftMonitorId = global.screen.connect('window-left-monitor',
+        this.connector.addConnection(global.screen, 'window-left-monitor',
             Lang.bind(this, this.windowLeftMonitor));
 
-        let setOverviewModeId = box.connect('set-overview-mode', Lang.bind(this, function(box, turnOn) {
+        this.connector.addConnection(box, 'set-overview-mode', Lang.bind(this, function(box, turnOn) {
             this.setOverviewMode(turnOn);
             this.hovering = false;
         }));
-        let stickyAddedId = box.connect('sticky-detected', Lang.bind(this, function(box, metaWindow) {
+        this.connector.addConnection(box, 'sticky-detected', Lang.bind(this, function(box, metaWindow) {
             this.doAddWindow(metaWindow);
         }));
-        let restackedNotifyId = global.screen.connect('restacked', Lang.bind(this, this.onRestack));
+        this.connector.addConnection(global.screen, 'restacked', Lang.bind(this, this.onRestack));
 
-        this.disconnectOtherSignals = function() {
-            global.screen.disconnect(restackedNotifyId);
-            this.box.disconnect(setOverviewModeId);
-            this.box.disconnect(stickyAddedId);
-            this.metaWorkspace.disconnect(windowAddedId);
-            this.metaWorkspace.disconnect(windowRemovedId);
-            global.screen.disconnect(windowEnteredMonitorId);
-            global.screen.disconnect(windowLeftMonitorId);
-        };
-        
         this.isActive = false;
         this.state = ThumbnailState.NORMAL;
         this.restack();
@@ -691,13 +679,13 @@ ExpoWorkspaceThumbnail.prototype = {
         this.doRemoveWindow(metaWin);
     },
 
-    destroy : function() {            
-        this.actor.destroy();        
+    destroy : function() {
+        this.connector.destroy();
+        this.actor.destroy();
         this.frame.destroy();
     },
 
     onDestroy: function(actor) {
-        this.disconnectOtherSignals();
         this.resetCloneHover();
         for (let i = 0; i < this.windows.length; i++) {
             this.windows[i].destroy();
@@ -1073,6 +1061,7 @@ ExpoThumbnailsBox.prototype = {
         this.actor.connect('get-preferred-width', Lang.bind(this, this.getPreferredWidth));
         this.actor.connect('get-preferred-height', Lang.bind(this, this.getPreferredHeight));
         this.actor.connect('allocate', Lang.bind(this, this.allocate));
+        this.connector = new Connector.Connector();
 
         // When we animate the scale, we don't animate the requested size of the thumbnails, rather
         // we ask for our final size and then animate within that size. This slightly simplifies the
@@ -1136,8 +1125,8 @@ ExpoThumbnailsBox.prototype = {
         // apparently we get no direct call to show the initial
         // view, so we must force an explicit overviewMode On/Off display
         // after it has been allocated
-        let allocId = this.connect('allocated', Lang.bind(this, function() {
-            this.disconnect(allocId);
+        let allocId = Connector.makeConnection(this, 'allocated', Lang.bind(this, function() {
+            allocId.disconnect();
             Mainloop.timeout_add(0, Lang.bind(this, function() {
                 this.emit('set-overview-mode', forceOverviewMode === 1);
                 this.thumbnails[this.kbThumbnailIndex].showKeyboardSelectedState(true);
@@ -1156,14 +1145,13 @@ ExpoThumbnailsBox.prototype = {
     },
 
     show: function() {
-        this.switchWorkspaceNotifyId =
-            global.window_manager.connect('switch-workspace',
+        this.connector.addConnection(global.window_manager, 'switch-workspace',
                                           Lang.bind(this, this.activeWorkspaceChanged));
 
-        this.workspaceAddedId = global.screen.connect('workspace-added', Lang.bind(this, function(screen, index) {
+        this.connector.addConnection(global.screen, 'workspace-added', Lang.bind(this, function(screen, index) {
             this.addThumbnails(index, 1);
         }));
-        this.workspaceRemovedId = global.screen.connect('workspace-removed', Lang.bind(this, function() {
+        this.connector.addConnection(global.screen, 'workspace-removed', Lang.bind(this, function() {
             this.button.hide();
 
             // just handling the single workspace removed is not enough
@@ -1264,10 +1252,7 @@ ExpoThumbnailsBox.prototype = {
     },
 
     hide: function() {
-        global.window_manager.disconnect(this.switchWorkspaceNotifyId);
-        global.screen.disconnect(this.workspaceAddedId);
-        global.screen.disconnect(this.workspaceRemovedId);
-
+        this.connector.destroy();
         for (let w = 0; w < this.thumbnails.length; w++) {
             this.thumbnails[w].destroy();
         }

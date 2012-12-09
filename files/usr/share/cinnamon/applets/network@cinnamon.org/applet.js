@@ -1,4 +1,5 @@
 const Applet = imports.ui.applet;
+const Connector = imports.misc.connector;
 const GLib = imports.gi.GLib;
 const GObject = imports.gi.GObject;
 const Lang = imports.lang;
@@ -96,6 +97,8 @@ function ssidToLabel(ssid) {
         label = _("<unknown>");
     return label;
 }
+
+var g_connector = null;
 
 function NMNetworkMenuItem() {
     this._init.apply(this, arguments);
@@ -256,8 +259,8 @@ NMWirelessSectionTitleMenuItem.prototype = {
         this._propertyHardware = property + '_hardware_enabled';
         this._setEnabledFunc = property + '_set_enabled';
 
-        this._client.connect('notify::' + property + '-enabled', Lang.bind(this, this._propertyChanged));
-        this._client.connect('notify::' + property + '-hardware-enabled', Lang.bind(this, this._propertyChanged));
+        g_connector.addConnection(this._client, 'notify::' + property + '-enabled', Lang.bind(this, this._propertyChanged));
+        g_connector.addConnection(this._client, 'notify::' + property + '-hardware-enabled', Lang.bind(this, this._propertyChanged));
 
         this._propertyChanged();
     },
@@ -874,7 +877,7 @@ NMDeviceBluetooth.prototype = {
 
     _init: function(client, device, connections) {
         this._autoConnectionName = this._makeConnectionName(device);
-        device.connect('notify::name', Lang.bind(this, this._updateAutoConnectionName));
+        g_connector.addConnection(device, 'notify::name', Lang.bind(this, this._updateAutoConnectionName));
 
         this.category = NMConnectionCategory.WWAN;
 
@@ -1609,6 +1612,7 @@ MyApplet.prototype = {
         Applet.IconApplet.prototype._init.call(this, orientation, panel_height);
         
         try {                                
+            g_connector = new Connector.Connector();
             this.menuManager = new PopupMenu.PopupMenuManager(this);
             this.menu = new Applet.AppletPopupMenu(this, orientation);
             this.menuManager.addMenu(this.menu);            
@@ -1666,7 +1670,7 @@ MyApplet.prototype = {
                 device: new NMDeviceVPN(this._client),
                 item: new NMWiredSectionTitleMenuItem(_("VPN Connections"))
             };
-            this._devices.vpn.device.connect('active-connection-changed', Lang.bind(this, function() {
+            g_connector.addConnection(this._devices.vpn.device, 'active-connection-changed', Lang.bind(this, function() {
                 this._devices.vpn.item.updateForDevice(this._devices.vpn.device);
             }));
             this._devices.vpn.item.updateForDevice(this._devices.vpn.device);
@@ -1711,13 +1715,13 @@ MyApplet.prototype = {
                 // and connect only once (this signal handler can be called again if NetworkManager goes up and down)
                 if (!this._inited) {
                     this._inited = true;
-                    this._client.connect('notify::manager-running', Lang.bind(this, this._syncNMState));
-                    this._client.connect('notify::networking-enabled', Lang.bind(this, this._syncNMState));
-                    this._client.connect('notify::state', Lang.bind(this, this._syncNMState));
-                    this._client.connect('notify::active-connections', Lang.bind(this, this._updateIcon));
-                    this._client.connect('device-added', Lang.bind(this, this._deviceAdded));
-                    this._client.connect('device-removed', Lang.bind(this, this._deviceRemoved));
-                    this._settings.connect('new-connection', Lang.bind(this, this._newConnection));
+                    g_connector.addConnection(this._client, 'notify::manager-running', Lang.bind(this, this._syncNMState));
+                    g_connector.addConnection(this._client, 'notify::networking-enabled', Lang.bind(this, this._syncNMState));
+                    g_connector.addConnection(this._client, 'notify::state', Lang.bind(this, this._syncNMState));
+                    g_connector.addConnection(this._client, 'notify::active-connections', Lang.bind(this, this._updateIcon));
+                    g_connector.addConnection(this._client, 'device-added', Lang.bind(this, this._deviceAdded));
+                    g_connector.addConnection(this._client, 'device-removed', Lang.bind(this, this._deviceRemoved));
+                    g_connector.addConnection(this._settings, 'new-connection', Lang.bind(this, this._newConnection));
                 }
             }));
             
@@ -2200,6 +2204,8 @@ MyApplet.prototype = {
     },
 
     on_applet_removed_from_panel: function() {
+        g_connector.destroy();
+        g_connector = null;
         if (this._periodicTimeoutId){
             Mainloop.source_remove(this._periodicTimeoutId);
         }

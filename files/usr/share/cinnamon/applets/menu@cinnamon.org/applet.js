@@ -1,4 +1,5 @@
 const Applet = imports.ui.applet;
+const Connector = imports.misc.connector;
 const Mainloop = imports.mainloop;
 const GMenu = imports.gi.GMenu;
 const Lang = imports.lang;
@@ -657,6 +658,7 @@ MyApplet.prototype = {
         Applet.TextIconApplet.prototype._init.call(this, orientation, panel_height);
         
         try {                    
+            this.connector = new Connector.Connector();
             this.set_applet_tooltip(_("Menu"));
                                     
             this.menuManager = new PopupMenu.PopupMenuManager(this);
@@ -665,12 +667,12 @@ MyApplet.prototype = {
                         
             this.actor.connect('key-press-event', Lang.bind(this, this._onSourceKeyPress));
             this.showRecent = global.settings.get_boolean("menu-show-recent");
-            global.settings.connect("changed::menu-show-recent", Lang.bind(this, function() {
+            this.connector.addConnection(global.settings, "changed::menu-show-recent", Lang.bind(this, function() {
                 this.showRecent = global.settings.get_boolean("menu-show-recent");
                 this._refreshApps();
             }));
             this.showPlaces = global.settings.get_boolean("menu-show-places");
-            global.settings.connect("changed::menu-show-places", Lang.bind(this, function() {
+            this.connector.addConnection(global.settings, "changed::menu-show-places", Lang.bind(this, function() {
                 this.showPlaces = global.settings.get_boolean("menu-show-places");
                 this._refreshApps();
             }));
@@ -685,14 +687,14 @@ MyApplet.prototype = {
                 }
             });
             updateActivateOnHover();
-            global.settings.connect("changed::activate-menu-applet-on-hover", updateActivateOnHover);
+            this.connector.addConnection(global.settings, "changed::activate-menu-applet-on-hover", updateActivateOnHover);
                         
             this.menu.actor.add_style_class_name('menu-background');
             this.menu.connect('open-state-changed', Lang.bind(this, this._onOpenStateChanged));                                
                                     
             this._updateIcon();
             
-            global.settings.connect("changed::menu-icon", Lang.bind(this, function() {
+            this.connector.addConnection(global.settings, "changed::menu-icon", Lang.bind(this, function() {
                 this._updateIcon();
             })); 
             
@@ -701,7 +703,7 @@ MyApplet.prototype = {
             if (menuLabel != "Menu") {
                 this.set_applet_label(menuLabel);                 
             } 
-            global.settings.connect("changed::menu-text", Lang.bind(this, function() {
+            this.connector.addConnection(global.settings, "changed::menu-text", Lang.bind(this, function() {
                     this.set_applet_label(global.settings.get_string("menu-text"));
                 })); 
             this._searchInactiveIcon = new St.Icon({ style_class: 'menu-search-entry-icon',
@@ -730,11 +732,11 @@ MyApplet.prototype = {
             AppFavorites.getAppFavorites().connect('changed', Lang.bind(this, this._refreshFavs));
 
             this.hover_delay = global.settings.get_int("menu-hover-delay") / 1000;
-            global.settings.connect("changed::menu-hover-delay", Lang.bind(this, function() {
+            this.connector.addConnection(global.settings, "changed::menu-hover-delay", Lang.bind(this, function() {
                     this.hover_delay = global.settings.get_int("menu-hover-delay") / 1000;
             })); 
                 
-            global.display.connect('overlay-key', Lang.bind(this, function(){
+            this.connector.addConnection(global.display, 'overlay-key', Lang.bind(this, function(){
                 try{
                     this.menu.toggle();
                 }
@@ -742,8 +744,8 @@ MyApplet.prototype = {
                     global.logError(e);
                 }
             }));
-            Main.placesManager.connect('places-updated', Lang.bind(this, this._refreshApps));
-            this.RecentManager.connect('changed', Lang.bind(this, this._refreshApps));
+            this.connector.addConnection(Main.placesManager, 'places-updated', Lang.bind(this, this._refreshApps));
+            this.connector.addConnection(this.RecentManager, 'changed', Lang.bind(this, this._refreshApps));
 
             this.edit_menu_item = new Applet.MenuItem(_("Edit menu"), Gtk.STOCK_EDIT, Lang.bind(this, this._launch_editor));
             this._applet_context_menu.addMenuItem(this.edit_menu_item);
@@ -755,6 +757,10 @@ MyApplet.prototype = {
         catch (e) {
             global.logError(e);
         }
+    },
+
+    on_applet_removed_from_panel: function(event) {
+        this.connector.destroy();   
     },
 
     openMenu: function() {
@@ -1371,9 +1377,9 @@ MyApplet.prototype = {
         this.applicationsScrollBox = new St.ScrollView({ x_fill: true, y_fill: false, y_align: St.Align.START, style_class: 'vfade menu-applications-scrollbox' });
 
         this.a11y_settings = new Gio.Settings({ schema: "org.gnome.desktop.a11y.applications" });
-        this.a11y_settings.connect("changed::screen-magnifier-enabled", Lang.bind(this, this._updateVFade));
+        this.connector.addConnection(this.a11y_settings, "changed::screen-magnifier-enabled", Lang.bind(this, this._updateVFade));
         this._updateVFade();
-        global.settings.connect("changed::menu-enable-autoscroll", Lang.bind(this, this._update_autoscroll));
+        this.connector.addConnection(global.settings, "changed::menu-enable-autoscroll", Lang.bind(this, this._update_autoscroll));
         this._update_autoscroll();
         let vscroll = this.applicationsScrollBox.get_vscroll_bar();
         vscroll.connect('scroll-start',

@@ -1,4 +1,5 @@
 const Applet = imports.ui.applet;
+const Connector = imports.misc.connector;
 const Lang = imports.lang;
 const Main = imports.ui.main;
 const Gtk = imports.gi.Gtk;
@@ -20,16 +21,17 @@ MyApplet.prototype = {
 
     _init: function(metadata, orientation, panel_height) {
         Applet.TextIconApplet.prototype._init.call(this, orientation, panel_height);
+        this.connector = new Connector.Connector();
 
         Gtk.IconTheme.get_default().append_search_path(metadata.path);
         this._orientation = orientation;
         this.menuManager = new PopupMenu.PopupMenuManager(this);
         this.notif_count = 0;
         this.notifications = [];
-        Main.messageTray.connect('notify-applet-update', Lang.bind(this, this._notification_added));
-        global.settings.connect('changed::panel-edit-mode', Lang.bind(this, this.on_panel_edit_mode_changed));
+        this.connector.addConnection(Main.messageTray, 'notify-applet-update', Lang.bind(this, this._notification_added));
+        this.connector.addConnection(global.settings, 'changed::panel-edit-mode', Lang.bind(this, this.on_panel_edit_mode_changed));
         this._calendarSettings = new Gio.Settings({ schema: 'org.cinnamon.calendar' });
-        this._calendarSettings.connect('changed', Lang.bind(this, this._update_timestamp));
+        this.connector.addConnection(this._calendarSettings, 'changed', Lang.bind(this, this._update_timestamp));
         this._blinking = false;
         this._blink_toggle = false;
     },
@@ -60,6 +62,10 @@ MyApplet.prototype = {
         this._crit_icon = new St.Icon({icon_name: 'critical-notif', icon_type: St.IconType.SYMBOLIC, reactive: true, track_hover: true, style_class: 'system-status-icon' });
         this._alt_crit_icon = new St.Icon({icon_name: 'alt-critical-notif', icon_type: St.IconType.SYMBOLIC, reactive: true, track_hover: true, style_class: 'system-status-icon' });
         this.update_list();
+    },
+
+    on_applet_removed_from_panel: function(event) {
+        this.connector.destroy();   
     },
 
     _notification_added: function (mtray, notification) {

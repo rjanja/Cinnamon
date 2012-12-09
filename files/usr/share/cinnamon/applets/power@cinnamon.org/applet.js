@@ -1,4 +1,5 @@
 const Applet = imports.ui.applet;
+const Connector = imports.misc.connector;
 const Gio = imports.gi.Gio;
 const DBus = imports.dbus;
 const Lang = imports.lang;
@@ -162,11 +163,12 @@ MyApplet.prototype = {
             this._deviceItems = [ ];
             this._hasPrimary = false;
             this._primaryDeviceId = null;
-            
+
             let settings = new Gio.Settings({ schema: POWER_SCHEMA }); 
             this._labelDisplay = settings.get_string(SHOW_PERCENTAGE_KEY);
             let applet = this;
-            settings.connect('changed::'+SHOW_PERCENTAGE_KEY, function() {
+            this.connector = new Connector.Connector();
+            this.connector.addConnection(settings, 'changed::'+SHOW_PERCENTAGE_KEY, function() {
                 applet._switchLabelDisplay(settings.get_string(SHOW_PERCENTAGE_KEY));
             });
 
@@ -201,7 +203,7 @@ MyApplet.prototype = {
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
             this.menu.addSettingsAction(_("Power Settings"), 'gnome-power-panel.desktop');
 
-            this._smProxy.connect('PropertiesChanged', Lang.bind(this, this._devicesChanged));
+            this.connector.addConnection(this._smProxy, 'PropertiesChanged', Lang.bind(this, this._devicesChanged));
             this._devicesChanged();            
         }
         catch (e) {
@@ -209,6 +211,10 @@ MyApplet.prototype = {
         }
     },
     
+    on_applet_removed_from_panel: function(event) {
+        this.connector.destroy();   
+    },
+
     on_applet_clicked: function(event) {
         this.menu.toggle();        
     },

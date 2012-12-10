@@ -15,6 +15,7 @@ const Lang = imports.lang;
 const History = imports.misc.history;
 const ExtensionSystem = imports.ui.extensionSystem;
 const Link = imports.ui.link;
+const Layout = imports.ui.layout;
 const CinnamonEntry = imports.ui.cinnamonEntry;
 const Tweener = imports.ui.tweener;
 const Main = imports.ui.main;
@@ -963,7 +964,7 @@ LookingGlass.prototype = {
     },
 
     _resize: function() {
-        if (Main.desktop_layout == Main.LAYOUT_TRADITIONAL) {
+        if (Main.layoutManager.desktop_layout == Layout.LAYOUT_TRADITIONAL) {
             let primary = Main.layoutManager.primaryMonitor;
             let myWidth = primary.width * 0.7;
             let availableHeight = primary.height - Main.layoutManager.keyboardBox.height;

@@ -92,12 +92,7 @@ LayoutManager.prototype = {
     setupDesktopLayout: function() {
         this.setupDesktopLayout = null; // don't call again
 
-        if (this._desktop_layout == LAYOUT_TRADITIONAL) {
-            this._panels[0] = new Panel.Panel(this, true, true);
-            this._panels[0].actor.add_style_class_name('panel-bottom');
-            this.panelBox.add(this._panels[0].actor);
-        }
-        else if (this._desktop_layout == LAYOUT_FLIPPED) {
+        if (this._desktop_layout == LAYOUT_FLIPPED) {
             this._panels[0] = new Panel.Panel(this, false, true);
             this._panels[0].actor.add_style_class_name('panel-top');
             this.panelBox.add(this._panels[0].actor);
@@ -117,6 +112,12 @@ LayoutManager.prototype = {
             this._panels[1].actor.add_style_class_name('panel-top');
             this.panelBox.add(this._panels[0].actor);   
             this.panelBox2.add(this._panels[1].actor);   
+        }
+        else {
+            this._desktop_layout = LAYOUT_TRADITIONAL;
+            this._panels[0] = new Panel.Panel(this, true, true);
+            this._panels[0].actor.add_style_class_name('panel-bottom');
+            this.panelBox.add(this._panels[0].actor);
         }
         this._panels.forEach(function(panel) {
             panel.connect('height-changed', Lang.bind(this, this._processPanelSettings));

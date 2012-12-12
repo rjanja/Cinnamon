@@ -92,35 +92,30 @@ LayoutManager.prototype = {
     setupDesktopLayout: function() {
         this.setupDesktopLayout = null; // don't call again
 
+        let panelData;
+        
         if (this._desktop_layout == LAYOUT_FLIPPED) {
-            this._panels[0] = new Panel.Panel(this, false, true);
-            this._panels[0].actor.add_style_class_name('panel-top');
-            this.panelBox.add(this._panels[0].actor);
+            panelData = [ {isBottom: false} ];
         }
         else if (this._desktop_layout == LAYOUT_CLASSIC) {
-            this._panels[0] = new Panel.Panel(this, false, true);
-            this._panels[1] = new Panel.Panel(this, true, false);
-            this._panels[0].actor.add_style_class_name('panel-top');
-            this._panels[1].actor.add_style_class_name('panel-bottom');
-            this.panelBox.add(this._panels[0].actor);   
-            this.panelBox2.add(this._panels[1].actor);   
+            panelData = [ {isBottom: false}, {isBottom: true} ];
         }
         else if (this._desktop_layout == LAYOUT_CLASSIC_FLIPPED) {
-            this._panels[0] = new Panel.Panel(this, true, true);
-            this._panels[1] = new Panel.Panel(this, false, false);
-            this._panels[0].actor.add_style_class_name('panel-bottom');
-            this._panels[1].actor.add_style_class_name('panel-top');
-            this.panelBox.add(this._panels[0].actor);   
-            this.panelBox2.add(this._panels[1].actor);   
+            panelData = [ {isBottom: true}, {isBottom: false} ];
         }
         else {
             this._desktop_layout = LAYOUT_TRADITIONAL;
-            this._panels[0] = new Panel.Panel(this, true, true);
-            this._panels[0].actor.add_style_class_name('panel-bottom');
-            this.panelBox.add(this._panels[0].actor);
+            panelData = [ {isBottom: true} ];
         }
-        this._panels.forEach(function(panel) {
+
+        let boxes = [this.panelBox, this.panelBox2];
+
+        panelData.forEach(function(data, index) {
+            let isPrimary = index == 0;
+            let panel = new Panel.Panel(this, data.isBottom, isPrimary);
+            boxes[index].add(panel.actor);
             panel.connect('height-changed', Lang.bind(this, this._processPanelSettings));
+            this._panels.push(panel);
         }, this);
     },
 
@@ -313,7 +308,7 @@ LayoutManager.prototype = {
         if (rightPanelBarrier)
             global.destroy_pointer_barrier(rightPanelBarrier);
 
-        if (panelBox.height) {                        
+        if (panelBox.height) {
             if ((this._desktop_layout == LAYOUT_TRADITIONAL && panelBox==this.panelBox) ||
                 (this._desktop_layout == LAYOUT_CLASSIC && panelBox==this.panelBox2) ||
                 (this._desktop_layout == LAYOUT_CLASSIC_FLIPPED && panelBox==this.panelBox))

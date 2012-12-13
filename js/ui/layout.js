@@ -30,6 +30,7 @@ LayoutManager.prototype = {
     _init: function () {
         this._rtl = (St.Widget.get_default_direction() == St.TextDirection.RTL);
         this.monitors = [];
+        this._panels = [];
         this.primaryMonitor = null;
         this.primaryIndex = -1;
         this.hotCornerManager = null;
@@ -61,16 +62,6 @@ LayoutManager.prototype = {
         this.addChrome(this.keyboardBox, { visibleInFullscreen: true });
         this._keyboardHeightNotifyId = 0;
 
-        this._panels = [];
-        this._applet_side = St.Side.BOTTOM;
-        this._desktop_layout = global.settings.get_string("desktop-layout");
-        if (this._desktop_layout == LAYOUT_FLIPPED) {
-            this._applet_side = St.Side.TOP;        
-        }
-        else if (this._desktop_layout == LAYOUT_CLASSIC) {
-            this._applet_side = St.Side.TOP;        
-        }
-
         this._monitorsChanged();
         this.setupDesktopLayout();
         this._processPanelSettings();
@@ -92,13 +83,18 @@ LayoutManager.prototype = {
     setupDesktopLayout: function() {
         this.setupDesktopLayout = null; // don't call again
 
+        this._applet_side = St.Side.BOTTOM;
+        this._desktop_layout = global.settings.get_string("desktop-layout");
+
         let panelData;
         
         if (this._desktop_layout == LAYOUT_FLIPPED) {
             panelData = [ {isBottom: false} ];
+            this._applet_side = St.Side.TOP;        
         }
         else if (this._desktop_layout == LAYOUT_CLASSIC) {
             panelData = [ {isBottom: false}, {isBottom: true} ];
+            this._applet_side = St.Side.TOP;        
         }
         else if (this._desktop_layout == LAYOUT_CLASSIC_FLIPPED) {
             panelData = [ {isBottom: true}, {isBottom: false} ];

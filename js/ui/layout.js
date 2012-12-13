@@ -110,7 +110,9 @@ LayoutManager.prototype = {
                 let isBottom = !panelOpts[0] || panelOpts[0] != 'top';
                 panelData.push({
                     isBottom: isBottom,
-                    monitor: isBottom ? this.bottomMonitor : this.primaryMonitor
+                    // use strings to designate monitors, since the actual index may
+                    // change if monitors are rearranged during a session
+                    monitorIndex: isBottom ? "bottomIndex" : "primaryIndex"
                 });
             }, this);
             return panelData.length > 0;
@@ -268,6 +270,10 @@ LayoutManager.prototype = {
             this.hotCornerManager.updatePosition(this.primaryMonitor, this.bottomMonitor);
     },
 
+    _getMonitor: function(index) {
+        return this.monitors[this[index]];
+    },
+
     _updateBoxes: function() {
         this._updateHotCorners();
 
@@ -283,7 +289,7 @@ LayoutManager.prototype = {
         let heights = [getPanelHeight(this.panel), getPanelHeight(this.panel2)];
         boxes.forEach(function(box, index) {
             if (box._panelData) {
-                let monitor = box._panelData.monitor;
+                let monitor = this._getMonitor(box._panelData.monitorIndex);
                 box.set_size(monitor.width, heights[index]);
                 if (box._panelData.isBottom) {
                     box.set_position(monitor.x, monitor.y + monitor.height - heights[index]);
@@ -319,7 +325,7 @@ LayoutManager.prototype = {
             global.destroy_pointer_barrier(rightPanelBarrier);
 
         if (panelBox.height && panelBox._panelData) {
-            let monitor = panelBox._panelData.monitor;
+            let monitor = this._getMonitor(panelBox._panelData.monitorIndex);
             if (panelBox._panelData.isBottom)
             {
                 leftPanelBarrier = global.create_pointer_barrier(monitor.x, monitor.y + monitor.height - panelBox.height,

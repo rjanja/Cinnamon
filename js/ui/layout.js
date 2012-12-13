@@ -86,28 +86,33 @@ LayoutManager.prototype = {
         this._applet_side = St.Side.BOTTOM;
         this._desktop_layout = global.settings.get_string("desktop-layout");
 
-        let panelData;
+        let newLayoutString = "bottom"; // default
         
         if (this._desktop_layout == LAYOUT_FLIPPED) {
-            panelData = [ {isBottom: false} ];
-            this._applet_side = St.Side.TOP;        
+            newLayoutString = "top";
         }
         else if (this._desktop_layout == LAYOUT_CLASSIC) {
-            panelData = [ {isBottom: false}, {isBottom: true} ];
-            this._applet_side = St.Side.TOP;        
+            newLayoutString = "top+bottom";
         }
         else if (this._desktop_layout == LAYOUT_CLASSIC_FLIPPED) {
-            panelData = [ {isBottom: true}, {isBottom: false} ];
+            newLayoutString = "bottom+top";
         }
-        else {
-            this._desktop_layout = LAYOUT_TRADITIONAL;
-            panelData = [ {isBottom: true} ];
-        }
+
+        let panelData = [];
+        newLayoutString.trim().split('+').forEach(function(panelString, index) {
+            let panelOpts = panelString.trim().split(',');
+            panelData.push({
+                isBottom: panelOpts[0] != 'top'
+            });
+        }, this);
 
         let boxes = [this.panelBox, this.panelBox2];
 
         panelData.forEach(function(data, index) {
             let isPrimary = index == 0;
+            if (isPrimary) {
+                this._applet_side = data.isBottom ? St.Side.BOTTOM : St.Side.TOP;
+            }
             let panel = new Panel.Panel(this, data.isBottom, isPrimary);
             boxes[index].add(panel.actor);
             panel.connect('height-changed', Lang.bind(this, this._processPanelSettings));

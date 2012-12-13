@@ -102,19 +102,25 @@ LayoutManager.prototype = {
         newLayoutString.trim().split('+').forEach(function(panelString, index) {
             let panelOpts = panelString.trim().split(',');
             panelData.push({
-                isBottom: panelOpts[0] != 'top'
+                isBottom: !panelOpts[0] || panelOpts[0] != 'top'
             });
         }, this);
 
         let boxes = [this.panelBox, this.panelBox2];
 
         panelData.forEach(function(data, index) {
+            if (index > 1) {
+                global.logError("cannot handle more than two panels");
+                return;
+            }
             let isPrimary = index == 0;
             if (isPrimary) {
                 this._applet_side = data.isBottom ? St.Side.BOTTOM : St.Side.TOP;
             }
             let panel = new Panel.Panel(this, data.isBottom, isPrimary);
-            boxes[index].add(panel.actor);
+            let box = boxes[index];
+            box.add(panel.actor);
+            box._panelData = {isBottom: data.isBottom};
             panel.connect('height-changed', Lang.bind(this, this._processPanelSettings));
             this._panels.push(panel);
         }, this);
@@ -260,32 +266,30 @@ LayoutManager.prototype = {
         };
 
         let p1height = getPanelHeight(this.panel);
+        let p2height = getPanelHeight(this.panel2);
 
-        if (this._desktop_layout == LAYOUT_TRADITIONAL) {
+        if (this.panelBox._panelData && this.panelBox._panelData.isBottom) {
             this.panelBox.set_size(this.bottomMonitor.width, p1height);
             this.panelBox.set_position(this.bottomMonitor.x, this.bottomMonitor.y + this.bottomMonitor.height - p1height);
         }
-        else if (this._desktop_layout == LAYOUT_FLIPPED) {
+        else if (this.panelBox._panelData && !this.panelBox._panelData.isBottom) {
             this.panelBox.set_size(this.primaryMonitor.width, p1height);
             this.panelBox.set_position(this.primaryMonitor.x, this.primaryMonitor.y);
         }
-        else if (this._desktop_layout == LAYOUT_CLASSIC) { 
-            let p2height = getPanelHeight(this.panel2);
-
-            this.panelBox.set_size(this.primaryMonitor.width, p1height);
-            this.panelBox.set_position(this.primaryMonitor.x, this.primaryMonitor.y);
-
+        else {
+            this.panelBox.set_size(0, 0);
+        }
+            
+        if (this.panelBox2._panelData && this.panelBox2._panelData.isBottom) { 
             this.panelBox2.set_size(this.bottomMonitor.width, p2height);
             this.panelBox2.set_position(this.bottomMonitor.x, this.bottomMonitor.y + this.bottomMonitor.height - p2height);
         }
-        else if (this._desktop_layout == LAYOUT_CLASSIC_FLIPPED) { 
-            let p2height = getPanelHeight(this.panel2);
-
+        else if (this.panelBox2._panelData && !this.panelBox2._panelData.isBottom) { 
             this.panelBox2.set_size(this.primaryMonitor.width, p2height);
             this.panelBox2.set_position(this.primaryMonitor.x, this.primaryMonitor.y);
-
-            this.panelBox.set_size(this.bottomMonitor.width, p1height);
-            this.panelBox.set_position(this.bottomMonitor.x, this.bottomMonitor.y + this.bottomMonitor.height - p2height);
+        }
+        else {
+            this.panelBox2.set_size(0, 0);
         }
 
         this.keyboardBox.set_position(this.bottomMonitor.x,
@@ -309,10 +313,8 @@ LayoutManager.prototype = {
         if (rightPanelBarrier)
             global.destroy_pointer_barrier(rightPanelBarrier);
 
-        if (panelBox.height) {
-            if ((this._desktop_layout == LAYOUT_TRADITIONAL && panelBox==this.panelBox) ||
-                (this._desktop_layout == LAYOUT_CLASSIC && panelBox==this.panelBox2) ||
-                (this._desktop_layout == LAYOUT_CLASSIC_FLIPPED && panelBox==this.panelBox))
+        if (panelBox.height && panelBox._panelData) {
+            if (panelBox._panelData.isBottom)
             {
                 let monitor = this.bottomMonitor;
                 leftPanelBarrier = global.create_pointer_barrier(monitor.x, monitor.y + monitor.height - panelBox.height,

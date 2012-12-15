@@ -34,10 +34,6 @@ LayoutManager.prototype = {
         this.primaryMonitor = null;
         this.primaryIndex = -1;
         this.hotCornerManager = null;
-        this._leftPanelBarrier = 0;
-        this._rightPanelBarrier = 0;
-        this._leftPanelBarrier2 = 0;
-        this._rightPanelBarrier2 = 0;
         this.edgeRight = null;
         this.edgeLeft = null;
         this._chrome = new Chrome(this);
@@ -51,11 +47,6 @@ LayoutManager.prototype = {
 
         this.addChrome(this.panelBox, { addToWindowgroup: false });
         this.addChrome(this.panelBox2, { addToWindowgroup: false });
-        this.panelBox.connect('allocation-changed',
-                              Lang.bind(this, this._updatePanelBarriers));
-        this.panelBox2.connect('allocation-changed',
-                               Lang.bind(this, this._updatePanelBarriers));
-
         this.keyboardBox = new St.BoxLayout({ name: 'keyboardBox',
                                               reactive: true,
                                               track_hover: true });
@@ -297,6 +288,7 @@ LayoutManager.prototype = {
                 else {
                     box.set_position(monitor.x, monitor.y);
                 }
+                this._updatePanelBarriers(box);
             }
             else {
                 box.set_size(0, 0);
@@ -310,21 +302,14 @@ LayoutManager.prototype = {
     },
 
     _updatePanelBarriers: function(panelBox) {
-        let leftPanelBarrier;
-        let rightPanelBarrier;
-        if (panelBox==this.panelBox){
-            leftPanelBarrier = this._leftPanelBarrier;
-            rightPanelBarrier = this._rightPanelBarrier;
-        }else{
-            leftPanelBarrier = this._leftPanelBarrier2;
-            rightPanelBarrier = this._rightPanelBarrier2;
-        }
-        if (leftPanelBarrier)
+        let leftPanelBarrier = panelBox._panelData.leftPanelBarrier;
+        let rightPanelBarrier = panelBox._panelData.rightPanelBarrier;
+        if (leftPanelBarrier) {
             global.destroy_pointer_barrier(leftPanelBarrier);
-        if (rightPanelBarrier)
             global.destroy_pointer_barrier(rightPanelBarrier);
+        }
 
-        if (panelBox.height && panelBox._panelData) {
+        if (panelBox.height) {
             let monitor = this._getMonitor(panelBox._panelData.monitorIndex);
             if (panelBox._panelData.isBottom)
             {
@@ -343,17 +328,9 @@ LayoutManager.prototype = {
                                                                   monitor.x + monitor.width, monitor.y + panelBox.height,
                                                                   4 /* BarrierNegativeX */);
             }
-        } else {
-            leftPanelBarrier = 0;
-            rightPanelBarrier = 0;
         }
-        if (panelBox==this.panelBox){
-            this._leftPanelBarrier = leftPanelBarrier;
-            this._rightPanelBarrier = rightPanelBarrier;
-        }else{
-            this._leftPanelBarrier2 = leftPanelBarrier;
-            this._rightPanelBarrier2 = rightPanelBarrier;
-        }
+        panelBox._panelData.leftPanelBarrier = leftPanelBarrier;
+        panelBox._panelData.rightPanelBarrier = rightPanelBarrier;
     },
 
     _monitorsChanged: function() {

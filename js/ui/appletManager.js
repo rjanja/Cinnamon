@@ -49,6 +49,11 @@ function init() {
     enabledApplets = global.settings.get_strv('enabled-applets');
 }
 
+function panelFieldToPanel(field) {
+    let panelNO =  parseInt(field.slice(5));
+    return Main.layoutManager.getPanel(panelNO - 1, true); // base 1
+}
+
 function onEnabledAppletsChanged() {
     try {    
         let newEnabledApplets = global.settings.get_strv('enabled-applets');        
@@ -68,8 +73,7 @@ function onEnabledAppletsChanged() {
                 let elements = appletDefinition.split(":");
                 if (elements.length == 4) {
                     let uuid = elements[3];
-                    let panelNO = parseInt(elements[0].slice(5));
-                    let panel = Main.layoutManager.getPanel(panelNO, true);
+                    let panel = panelFieldToPanel(elements[0]);
 
                     let orientation = St.Side.TOP;
                     if (panel.bottomPosition) {
@@ -136,8 +140,7 @@ function add_applet_to_panels(appletDefinition) {
         let elements = appletDefinition.split(":");
         let center = false;
         if (elements.length == 4) {
-            let panelNO = parseInt(elements[0].slice(5));
-            let panel = Main.layoutManager.getPanel(panelNO, true);
+            let panel = panelFieldToPanel(elements[0]);
 
             let location = panel._leftBox;
             if (elements[1] == "center") {
@@ -420,7 +423,7 @@ function saveAppletsPositions() {
     }, this);
     let applets = new Array();
     Main.layoutManager.panels.forEach(function(panel, i) {
-        let panel_string = "panel" + i;
+        let panel_string = "panel" + (i + 1); // base 1
         for (var j in zones_strings){
             let zone_string = zones_strings[j];
             let zone = panel["_"+zone_string+"Box"];
@@ -449,8 +452,7 @@ function updateAppletPanelHeights(force_recalc) {
         let elements = appletDefinition.split(":");
         if (elements.length == 4) {
             let uuid = elements[3];
-            let panelNO = parseInt(elements[0].slice(5));
-            let panel = Main.layoutManager.getPanel(panelNO, true);
+            let panel = panelFieldToPanel(elements[0]);
 
             if (appletObj[uuid]) {
                 let newheight = panel.actor.get_height();

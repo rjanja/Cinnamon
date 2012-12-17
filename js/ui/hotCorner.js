@@ -26,13 +26,9 @@ HotCornerManager.prototype = {
         this.corners = [];
         for (let i = 0; i < 4; i++){ // In order: top left; top right; bottom left; bottom right;
             this.corners.push(new HotCorner());
-            Main.layoutManager.addChrome(this.corners[i].actor);
-            Main.layoutManager.addChrome(this.corners[i].iconActor, {visibleInFullscreen: false});
         }
         this.parseGSettings();
         global.settings.connect('changed::' + OVERVIEW_CORNERS_KEY, Lang.bind(this, this.parseGSettings));
-
-        this.updatePosition(Main.layoutManager.primaryMonitor, Main.layoutManager.bottomMonitor);
     },
 
     parseGSettings: function() {
@@ -49,9 +45,9 @@ HotCornerManager.prototype = {
         return true;
     },
 
-    updatePosition: function(primaryMonitor, bottomMonitor) {
-        let p_x = primaryMonitor.x;
-        let p_y = primaryMonitor.y;
+    updatePosition: function(topMonitor, bottomMonitor) {
+        let p_x = topMonitor.x;
+        let p_y = topMonitor.y;
         let b_x = bottomMonitor.x;
         let b_y = bottomMonitor.y + bottomMonitor.height;
 
@@ -60,8 +56,8 @@ HotCornerManager.prototype = {
         this.corners[0].iconActor.set_position(p_x + 1, p_y + 1);
 
         // Top Right: 1
-        this.corners[1].actor.set_position(p_x + primaryMonitor.width - 1, p_y);
-        this.corners[1].iconActor.set_position(p_x + primaryMonitor.width - 33, p_y + 1);
+        this.corners[1].actor.set_position(p_x + topMonitor.width - 1, p_y);
+        this.corners[1].iconActor.set_position(p_x + topMonitor.width - 33, p_y + 1);
 
         // Bottom Left: 2
         this.corners[2].actor.set_position(b_x, b_y - 1);
@@ -137,15 +133,6 @@ HotCorner.prototype = {
         this._corner.connect('leave-event',
                              Lang.bind(this, this._onCornerLeft));
 
-        // Cache the three ripples instead of dynamically creating and destroying them.
-        this._ripple1 = new St.BoxLayout({ style_class: 'ripple-box', opacity: 0 });
-        this._ripple2 = new St.BoxLayout({ style_class: 'ripple-box', opacity: 0 });
-        this._ripple3 = new St.BoxLayout({ style_class: 'ripple-box', opacity: 0 });
-
-        Main.uiGroup.add_actor(this._ripple1);
-        Main.uiGroup.add_actor(this._ripple2);
-        Main.uiGroup.add_actor(this._ripple3);
-
         // Construct the overview corner icon
         this.iconActor = new St.Button({name: 'overview-corner', reactive: true, track_hover: true});
         this.iconActor.connect('button-release-event', Lang.bind(this, this.runAction));
@@ -191,11 +178,43 @@ HotCorner.prototype = {
         this.hover = TF[properties[1]];
         this.icon = TF[properties[2]];
 
-        if (this.hover) this.actor.show();
-        else this.actor.hide();
+        if (this.hover) {
+            if (!this._ripple3) {
+                Main.layoutManager.addChrome(this.actor);
+                this.actor.show();
+                this._ripple1 = new St.BoxLayout({ style_class: 'ripple-box', opacity: 0 });
+                this._ripple2 = new St.BoxLayout({ style_class: 'ripple-box', opacity: 0 });
+                this._ripple3 = new St.BoxLayout({ style_class: 'ripple-box', opacity: 0 });
+                Main.uiGroup.add_actor(this._ripple1);
+                Main.uiGroup.add_actor(this._ripple2);
+                Main.uiGroup.add_actor(this._ripple3);
+            }
+        }
+        else {
+            if (this._ripple1) {
+                this._ripple1.destroy();
+                this._ripple1 = null;
+                this._ripple2.destroy();
+                this._ripple3.destroy();
+                this.actor.hide();
+                Main.layoutManager.removeChrome(this.actor);
+            }
+        }
 
-        if (this.icon) this.iconActor.show();
-        else this.iconActor.hide();
+        if (this.icon) {
+            if (!this.iconShowing) {
+                Main.layoutManager.addChrome(this.iconActor, {visibleInFullscreen: false});
+                this.iconActor.show();
+                this.iconShowing = true;
+            }
+        }
+        else {
+            if (this.iconShowing) {
+                this.iconActor.hide();
+                Main.layoutManager.removeChrome(this.iconActor);
+                this.iconShowing = false;
+            }
+        }
     },
 
     rippleAnimation: function() {
@@ -203,20 +222,11 @@ HotCorner.prototype = {
         // parameters were found by trial and error, so don't look
         // for them to make perfect sense mathematically
 
-        //                              delay  time  scale opacity => scale
-        this._animRipple(this._ripple1, 0.0,   0.83,  0.25,  1.0,     1.5);
-        this._animRipple(this._ripple2, 0.05,  1.0,   0.0,   0.7,     1.25);
-        this._animRipple(this._ripple3, 0.35,  1.0,   0.0,   0.3,     1);
-    },
-
-    handleDragOver: function(source, actor, x, y, time) {
-        if (source != Main.xdndHandler)
-            return;
-
-        if (!Main.overview.visible && !Main.overview.animationInProgress && !Main.expo.visible) {
-            this.rippleAnimation();
-            Main.overview.showTemporarily();
-            Main.overview.beginItemDrag(actor);
+        if (this._ripple1) {
+            //                              delay  time  scale opacity => scale
+            this._animRipple(this._ripple1, 0.0,   0.83,  0.25,  1.0,     1.5);
+            this._animRipple(this._ripple2, 0.05,  1.0,   0.0,   0.7,     1.25);
+            this._animRipple(this._ripple3, 0.35,  1.0,   0.0,   0.3,     1);
         }
     },
 

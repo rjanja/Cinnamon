@@ -13,15 +13,13 @@ gettext.install("cinnamon", "/usr/share/cinnamon/locale")
 CUSTOM_KEYS_BASENAME = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings"
 CUSTOM_KEYS_SCHEMA = "org.gnome.settings-daemon.plugins.media-keys.custom-keybinding"
 CUSTOM_KEYBINDINGS_GSETTINGS = False
-HAS_DEDICATED_TERMINAL_SHORTCUT = False
 
 schema = Gio.Settings("org.gnome.settings-daemon.plugins.media-keys")
 key_list = schema.list_keys()
 for key in key_list:
     if key == "custom-keybindings":
-        CUSTOM_KEYBINDINGS_GSETTINGS = True
-    if key == "terminal":
-        HAS_DEDICATED_TERMINAL_SHORTCUT = True
+        CUSTOM_KEYBINDINGS_GSETTINGS = True;
+        break
 
 FORBIDDEN_KEYVALS = [
     Gdk.KEY_Home,
@@ -142,7 +140,7 @@ KEYBINDINGS = [
     [_("High contrast on or off"), "org.gnome.settings-daemon.plugins.media-keys", "toggle-contrast", False, "accessibility"]
 ]
 
-if HAS_DEDICATED_TERMINAL_SHORTCUT:
+if CUSTOM_KEYBINDINGS_GSETTINGS:
     KEYBINDINGS.append([_("Launch terminal"), "org.gnome.settings-daemon.plugins.media-keys", "terminal", False, "launchers"])
 
 class Module:

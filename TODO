@@ -1,0 +1,19 @@
+Spices integration TO-DO:
+
+
+* [General]
+  - Add better error handling
+  - Add author info, score on detail popup
+  - Expose homepage, other links? from spices (json)
+  - Add link interception/handling to detail popup
+
+* Extensions
+  - Look into changes required to make extensions uninstallable based on 
+    Cinnamon version and extension version. Might also use this for the other
+    spices.
+
+* Desklets
+
+* Themes
+  - Look into changes required to show full screen screenshots, we kind of need
+    to have this option, a tiny screenshot will not be as effective.

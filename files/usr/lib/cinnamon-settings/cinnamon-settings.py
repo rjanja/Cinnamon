@@ -67,7 +67,7 @@ class MainWindow:
 
         for i in range(len(modules)):
             mod = modules[i].Module(self.content_box)
-            if self.loadCheck(mod):
+            if self.loadCheck(mod) and self.setParentRefs(mod):
                 self.sidePages.append((mod.sidePage, mod.name))
 
         # create the backing store for the side nav-view.
@@ -100,6 +100,13 @@ class MainWindow:
             self.side_view.select_path(path)
 
         self.window.show()
+
+    def setParentRefs (self, mod):
+        try:
+            mod._set_parent_ref(self.window, self.builder)
+        except AttributeError:
+            pass
+        return True
 
     def loadCheck (self, mod):
         try:

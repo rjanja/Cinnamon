@@ -6,6 +6,7 @@
       "homepage": "https://github.com/rjanja/desktop-capture",
       "screenshot": "https://raw.github.com/rjanja/desktop-capture/master/img/cinnamon-screenshot.png",
       "version": "1.0",
-      "timestamp": "2013-01-09"
+      "timestamp": "2013-01-09",
+      "maxInstances": 1
    }
 }

@@ -1,0 +1,19 @@
+Spices Installer
+
+#1 - Load index JSON file
+	This contains applets' serials, spice IDs, titles, scores, and ages
+
+#2 - Load applet icons
+
+- Progress bar complete -
+
+#3 - Show local spices html using JSON index
+	Load images from local folder
+
+#4 - Applet detail: Python opens spices page, extracts information, saves to temp file
+
+- Progress bar complete -
+
+#5 - Show local applet html using temp file and other saved assets
+
+#6 - Install or Uninstall applet

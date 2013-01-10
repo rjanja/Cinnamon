@@ -27,11 +27,13 @@ except Exception, detail:
     sys.exit(1)
 
 class SidePage:
-    def __init__(self, name, icon, content_box):        
+    def __init__(self, name, icon, content_box):
         self.name = name
         self.icon = icon
         self.content_box = content_box
         self.widgets = []
+        self.topWindow = None
+        self.builder = None
         
     def add_widget(self, widget):
         self.widgets.append(widget)
@@ -44,7 +46,7 @@ class SidePage:
         
         # Add our own widgets
         for widget in self.widgets:
-            self.content_box.pack_start(widget, False, False, 2)            
+            self.content_box.pack_start(widget, False, False, 2)
         self.content_box.show_all()
 
 def walk_directories(dirs, filter_func):

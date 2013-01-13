@@ -1,12 +1,620 @@
 {
-   "capture@rjanja": {
-      "name": "Desktop Capture",
-      "description": "Screenshot and screencasting tools",
-      "icon": "applets-screenshooter",
-      "homepage": "https://github.com/rjanja/desktop-capture",
-      "screenshot": "https://raw.github.com/rjanja/desktop-capture/master/img/cinnamon-screenshot.png",
-      "version": "1.0",
-      "timestamp": "2013-01-09",
-      "maxInstances": 1
+   'A1K7-OB2D-WUIW': {
+       'spices-id': '17',
+       'title': 'Weather',
+       'score': '182',
+       'age': '4 days'
+   },
+   '752W-9CUB-6QDA': {
+       'spices-id': '16',
+       'title': 'Window List with App Grouping',
+       'score': '137',
+       'age': '3 days'
+   },
+   'EFCB-TUYS-ZCAX': {
+       'spices-id': '5',
+       'title': 'Places',
+       'score': '87',
+       'age': '1 month'
+   },
+   'QHWG-R0B2-3P0B': {
+       'spices-id': '46',
+       'title': 'Classic Menu',
+       'score': '62',
+       'age': '5 months'
+   },
+   'SJNB-H37Z-DSHZ': {
+       'spices-id': '36',
+       'title': 'Better Settings',
+       'score': '51',
+       'age': '7 months'
+   },
+   'C0OO-YGKE-JF6L': {
+       'spices-id': '51',
+       'title': 'Gnome Menu [Stable]',
+       'score': '48',
+       'age': '3 months'
+   },
+   'K9J8-C68A-YMC3': {
+       'spices-id': '12',
+       'title': 'Hardware Monitor',
+       'score': '47',
+       'age': '11 months'
+   },
+   'THPM-J90Y-C648': {
+       'spices-id': '49',
+       'title': 'Shutdown Applet',
+       'score': '41',
+       'age': '8 months'
+   },
+   'DTZ5-8WXE-SGJJ': {
+       'spices-id': '4',
+       'title': 'Force Quit',
+       'score': '35',
+       'age': '11 months'
+   },
+   'KUY6-OOM1-YB5K': {
+       'spices-id': '39',
+       'title': 'Quit Applet',
+       'score': '34',
+       'age': '7 months'
+   },
+   'DKTM-9XL3-UTL9': {
+       'spices-id': '25',
+       'title': 'Virtualbox Launcher',
+       'score': '34',
+       'age': '4 months'
+   },
+   '7LUW-KS34-NVJC': {
+       'spices-id': '14',
+       'title': 'Restart Cinnamon',
+       'score': '33',
+       'age': '11 months'
+   },
+   'EEFL-GIJ8-AT85': {
+       'spices-id': '35',
+       'title': 'ScreenShot',
+       'score': '33',
+       'age': '9 months'
+   },
+   'MAC9-B3SK-FD99': {
+       'spices-id': '62',
+       'title': 'All-in-one Places',
+       'score': '32',
+       'age': '5 months'
+   },
+   'R2IJ-3XAD-PY1D': {
+       'spices-id': '18',
+       'title': 'Network speed monitor',
+       'score': '32',
+       'age': '2 months'
+   },
+   'MJNZ-RRTM-M3Q4': {
+       'spices-id': '41',
+       'title': 'ScreenShot+Desktop Record',
+       'score': '31',
+       'age': '9 months'
+   },
+   'A2CA-14SI-IQ60': {
+       'spices-id': '27',
+       'title': 'GPaste',
+       'score': '29',
+       'age': '11 months'
+   },
+   '1TGC-TUM3-MMVB': {
+       'spices-id': '78',
+       'title': 'Windows 7 & Cinnamon,  Menu',
+       'score': '28',
+       'age': '8 hours'
+   },
+   'PDB6-N68V-4IIS': {
+       'spices-id': '45',
+       'title': 'User Menu',
+       'score': '27',
+       'age': '7 months'
+   },
+   '2WGJ-4DNF-EYZF': {
+       'spices-id': '24',
+       'title': 'Messaging Menu [stable]',
+       'score': '26',
+       'age': '8 months'
+   },
+   'YAO9-T2VE-9CXG': {
+       'spices-id': '79',
+       'title': 'Multi-Core System Monitor',
+       'score': '24',
+       'age': '2 months'
+   },
+   'ME0A-90MG-9FWZ': {
+       'spices-id': '60',
+       'title': 'My Launcher',
+       'score': '20',
+       'age': '4 months'
+   },
+   'AIWJ-MCA2-0AA7': {
+       'spices-id': '11',
+       'title': 'Power-off',
+       'score': '20',
+       'age': '11 months'
+   },
+   '0PFY-D2S7-28HG': {
+       'spices-id': '3',
+       'title': 'Recent Documents',
+       'score': '20',
+       'age': '11 months'
+   },
+   'XNSP-KEO1-F0PV': {
+       'spices-id': '30',
+       'title': 'Cinnamon Utilities Menu',
+       'score': '18',
+       'age': '7 months'
+   },
+   'Q6QU-GRT6-A0JK': {
+       'spices-id': '68',
+       'title': 'Timer with Notifications',
+       'score': '18',
+       'age': '8 months'
+   },
+   'PGMU-ZE55-B3JE': {
+       'spices-id': '37',
+       'title': 'Caps/Num Lock',
+       'score': '16',
+       'age': '5 months'
+   },
+   'SNQX-MTHW-14UX': {
+       'spices-id': '59',
+       'title': 'Screensaver Inhibit',
+       'score': '16',
+       'age': '8 months'
+   },
+   'NDC7-X4ET-3A8Z': {
+       'spices-id': '56',
+       'title': 'Search Applet (Files)',
+       'score': '16',
+       'age': '8 months'
+   },
+   'VVEC-BFM3-OSL6': {
+       'spices-id': '15',
+       'title': 'Toggle LookingGlass',
+       'score': '16',
+       'age': '11 months'
+   },
+   'I8Q5-5DTD-INKV': {
+       'spices-id': '84',
+       'title': 'Win7 menu emulator ',
+       'score': '16',
+       'age': '6 months'
+   },
+   'R0IO-TL32-L9QV': {
+       'spices-id': '61',
+       'title': 'My Bookmarks',
+       'score': '15',
+       'age': '8 months'
+   },
+   'RA1F-RKWM-AG2L': {
+       'spices-id': '8',
+       'title': 'Simple CPU Monitor',
+       'score': '15',
+       'age': '11 months'
+   },
+   '559M-Y7G8-SXT3': {
+       'spices-id': '33',
+       'title': 'SysMenu',
+       'score': '15',
+       'age': '9 months'
+   },
+   'RPNF-ALYH-YI01': {
+       'spices-id': '38',
+       'title': 'Window List with preview',
+       'score': '15',
+       'age': '5 months'
+   },
+   'X9M6-P0XI-KN02': {
+       'spices-id': '90',
+       'title': 'System Monitor Applet',
+       'score': '14',
+       'age': '3 months'
+   },
+   'RT00-DT87-R5WX': {
+       'spices-id': '2',
+       'title': 'Trash',
+       'score': '14',
+       'age': '11 months'
+   },
+   'CVWH-M1M3-LQEZ': {
+       'spices-id': '67',
+       'title': 'Cinnamon Window Buttons',
+       'score': '12',
+       'age': '8 months'
+   },
+   '4ROH-POUL-KU4G': {
+       'spices-id': '70',
+       'title': 'CPU Frequency Selector',
+       'score': '12',
+       'age': '3 weeks'
+   },
+   'UZKX-3UNF-50GI': {
+       'spices-id': '88',
+       'title': 'System Monitor',
+       'score': '12',
+       'age': '5 months'
+   },
+   'X31K-OF4Z-EQV5': {
+       'spices-id': '44',
+       'title': 'Touchpad Indicator',
+       'score': '12',
+       'age': '5 months'
+   },
+   'QFGJ-N834-JZ1H': {
+       'spices-id': '54',
+       'title': 'Better Places',
+       'score': '11',
+       'age': '7 months'
+   },
+   '7S4P-9580-S4VP': {
+       'spices-id': '50',
+       'title': 'informative Sound',
+       'score': '11',
+       'age': '8 months'
+   },
+   'BYIL-A3ET-B0XE': {
+       'spices-id': '57',
+       'title': 'Internet Search Box',
+       'score': '11',
+       'age': '8 months'
+   },
+   'EWVU-96JD-5LC4': {
+       'spices-id': '10',
+       'title': 'Logout',
+       'score': '11',
+       'age': '11 months'
+   },
+   'QMXF-TT00-WOT0': {
+       'spices-id': '48',
+       'title': 'Restart Cinnamon (symbolic panel icon)',
+       'score': '11',
+       'age': '3 weeks'
+   },
+   'UV87-1DNG-FSU5': {
+       'spices-id': '7',
+       'title': 'Screen locker',
+       'score': '11',
+       'age': '11 months'
+   },
+   'QXTW-E2L5-LHLQ': {
+       'spices-id': '20',
+       'title': 'Separator',
+       'score': '11',
+       'age': '5 months'
+   },
+   'SEMH-HN84-9WVI': {
+       'spices-id': '87',
+       'title': 'Title Bar',
+       'score': '11',
+       'age': '4 months'
+   },
+   'X17H-CQRG-DG7H': {
+       'spices-id': '1',
+       'title': 'a11y',
+       'score': '10',
+       'age': '11 months'
+   },
+   'IFNS-IKVW-8OSU': {
+       'spices-id': '106',
+       'title': 'CPU Temperature Indicator',
+       'score': '10',
+       'age': '4 weeks'
+   },
+   'VJWB-8ERW-T9U0': {
+       'spices-id': '115',
+       'title': 'sports-update',
+       'score': '10',
+       'age': '1 day'
+   },
+   '516M-BD33-FEBF': {
+       'spices-id': '63',
+       'title': 'Web Developer Menu',
+       'score': '10',
+       'age': '1 day'
+   },
+   'VVJ4-1FKJ-H48B': {
+       'spices-id': '6',
+       'title': 'System monitor',
+       'score': '9',
+       'age': '11 months'
+   },
+   'U2TH-XRQ9-E8E5': {
+       'spices-id': '98',
+       'title': 'Windows Quick List With Close Button',
+       'score': '9',
+       'age': '2 months'
+   },
+   '2XT2-FDNL-VLIJ': {
+       'spices-id': '108',
+       'title': 'World Clock Calendar',
+       'score': '9',
+       'age': '2 weeks'
+   },
+   'L2H2-YESQ-DADW': {
+       'spices-id': '40',
+       'title': 'Simpler Menu',
+       'score': '8',
+       'age': '9 months'
+   },
+   'NYUB-LUN4-0ORQ': {
+       'spices-id': '43',
+       'title': 'Display Switcher',
+       'score': '7',
+       'age': '9 months'
+   },
+   'KU1J-EC51-9XQG': {
+       'spices-id': '65',
+       'title': 'Favorites',
+       'score': '7',
+       'age': '7 months'
+   },
+   '603D-3Q7U-2WIX': {
+       'spices-id': '81',
+       'title': 'Windows',
+       'score': '7',
+       'age': '2 months'
+   },
+   'PQKN-4067-QUI2': {
+       'spices-id': '64',
+       'title': 'Brightness',
+       'score': '6',
+       'age': '7 months'
+   },
+   'CD22-NOFW-MPUG': {
+       'spices-id': '96',
+       'title': 'Desktop Capture',
+       'score': '6',
+       'age': '4 days'
+   },
+   'FI0Z-TTMM-VYVF': {
+       'spices-id': '97',
+       'title': 'Display & Layouts',
+       'score': '6',
+       'age': '2 months'
+   },
+   'ZDE7-R0F4-GA92': {
+       'spices-id': '105',
+       'title': 'GitHub Explorer',
+       'score': '6',
+       'age': '2 weeks'
+   },
+   '563Y-VL3I-XHQ6': {
+       'spices-id': '73',
+       'title': 'Gmail Notifier',
+       'score': '6',
+       'age': '7 months'
+   },
+   'SR13-7OLC-DJS1': {
+       'spices-id': '101',
+       'title': 'Settings Plus',
+       'score': '6',
+       'age': '1 month'
+   },
+   'MD03-P74R-WD9T': {
+       'spices-id': '95',
+       'title': 'Shutdown timer',
+       'score': '6',
+       'age': '2 months'
+   },
+   'KLDO-BWBO-4G0J': {
+       'spices-id': '82',
+       'title': 'Window Title Applet',
+       'score': '6',
+       'age': '6 months'
+   },
+   '52MW-1RTY-ICIR': {
+       'spices-id': '9',
+       'title': 'Autostart programs',
+       'score': '5',
+       'age': '11 months'
+   },
+   'OLXI-SGQI-UWJS': {
+       'spices-id': '113',
+       'title': 'Custom Applications Menu',
+       'score': '5',
+       'age': '1 week'
+   },
+   '3RCJ-HS5L-4ESG': {
+       'spices-id': '110',
+       'title': 'Libre Office Quick Start',
+       'score': '5',
+       'age': '4 weeks'
+   },
+   'MZES-V7BO-VMU3': {
+       'spices-id': '69',
+       'title': 'Calendar Enhanced',
+       'score': '4',
+       'age': '8 months'
+   },
+   'TVDH-A998-7OO3': {
+       'spices-id': '94',
+       'title': 'CskMenu',
+       'score': '4',
+       'age': '4 months'
+   },
+   'WR6V-N2XJ-QHER': {
+       'spices-id': '71',
+       'title': 'Extensions Manager',
+       'score': '4',
+       'age': '7 months'
+   },
+   '5P0C-DN68-9VH2': {
+       'spices-id': '111',
+       'title': 'GPU Temperature (ATI and NVIDIA)',
+       'score': '4',
+       'age': '1 week'
+   },
+   'SRYB-PUJR-7XNN': {
+       'spices-id': '100',
+       'title': 'gTile-Applet',
+       'score': '4',
+       'age': '2 months'
+   },
+   'YUSS-F52Q-BEN9': {
+       'spices-id': '66',
+       'title': 'Looking Glass Restart',
+       'score': '4',
+       'age': '6 months'
+   },
+   'WMU8-EKEF-9NEI': {
+       'spices-id': '31',
+       'title': 'Network usage monitor',
+       'score': '4',
+       'age': '9 months'
+   },
+   'EUMN-5ARC-SY4Z': {
+       'spices-id': '23',
+       'title': 'Panel Separator (Icon)',
+       'score': '4',
+       'age': '11 months'
+   },
+   'CTZF-TI8M-GUUG': {
+       'spices-id': '52',
+       'title': 'Places with Terminal',
+       'score': '4',
+       'age': '8 months'
+   },
+   'L4PP-SLPX-S1XA': {
+       'spices-id': '28',
+       'title': 'Record Desktop',
+       'score': '4',
+       'age': '9 months'
+   },
+   'SPUH-XQWY-PJO1': {
+       'spices-id': '21',
+       'title': 'Separator2',
+       'score': '4',
+       'age': '9 months'
+   },
+   'UC22-PJZO-KS39': {
+       'spices-id': '114',
+       'title': 'Shutdown Menu With Icons',
+       'score': '4',
+       'age': '1 week'
+   },
+   'VF7W-V0MH-WIU6': {
+       'spices-id': '42',
+       'title': 'Simplest Menu',
+       'score': '4',
+       'age': '8 months'
+   },
+   'HYO5-EZ5U-LLPC': {
+       'spices-id': '26',
+       'title': 'SoftYubikey',
+       'score': '4',
+       'age': '11 months'
+   },
+   'FRRN-BVBS-GXH8': {
+       'spices-id': '19',
+       'title': 'Spaces',
+       'score': '4',
+       'age': '11 months'
+   },
+   'RD3J-X2UU-FJVP': {
+       'spices-id': '104',
+       'title': 'Compact Menu',
+       'score': '3',
+       'age': '1 month'
+   },
+   'FVMV-QLOV-BLM4': {
+       'spices-id': '72',
+       'title': 'Temp',
+       'score': '3',
+       'age': '7 months'
+   },
+   'RUER-VNIP-UH07': {
+       'spices-id': '103',
+       'title': 'Touchpad Indicator Classic',
+       'score': '3',
+       'age': '1 month'
+   },
+   '2AYO-J807-LHDK': {
+       'spices-id': '75',
+       'title': 'Binary Clock',
+       'score': '2',
+       'age': '7 months'
+   },
+   'OAK0-Y789-0PTM': {
+       'spices-id': '89',
+       'title': 'Clipboard QR code applet',
+       'score': '2',
+       'age': '5 months'
+   },
+   'I1CW-5625-U7VZ': {
+       'spices-id': '112',
+       'title': 'Custom Places',
+       'score': '2',
+       'age': '3 weeks'
+   },
+   '9B3A-6XQS-EDYV': {
+       'spices-id': '22',
+       'title': 'Panel Separator (Theme)',
+       'score': '2',
+       'age': '11 months'
+   },
+   '9PVS-F09Z-9XS2': {
+       'spices-id': '34',
+       'title': 'Simple memory monitor',
+       'score': '2',
+       'age': '9 months'
+   },
+   'BVF7-NSV0-U1MW': {
+       'spices-id': '93',
+       'title': 'SSH Launcher',
+       'score': '2',
+       'age': '4 months'
+   },
+   'EWZT-XKS6-WM8Y': {
+       'spices-id': '83',
+       'title': 'Caps/Num Lock with MessageTray notifications',
+       'score': '1',
+       'age': '6 months'
+   },
+   'VN8R-5ACJ-FW00': {
+       'spices-id': '80',
+       'title': 'Update Manager Link',
+       'score': '1',
+       'age': '2 months'
+   },
+   'AXMM-UZH3-FLSP': {
+       'spices-id': '32',
+       'title': 'Custom gtk menu',
+       'score': '0',
+       'age': '9 months'
+   },
+   '75U5-EKM9-VC2G': {
+       'spices-id': '109',
+       'title': 'Desktop search with Recoll',
+       'score': '0',
+       'age': '4 weeks'
+   },
+   'AMGN-98MV-BTKO': {
+       'spices-id': '13',
+       'title': 'ding',
+       'score': '0',
+       'age': '11 months'
+   },
+   '863L-K7X1-DI33': {
+       'spices-id': '74',
+       'title': 'Groove Key',
+       'score': '0',
+       'age': '7 months'
+   },
+   '45MT-XW82-NOSM': {
+       'spices-id': '99',
+       'title': 'Path Monitor',
+       'score': '0',
+       'age': '2 days'
+   },
+   'DO8V-22AT-ZZ1G': {
+       'spices-id': '76',
+       'title': 'Window-List with double-click to maximize',
+       'score': '0',
+       'age': '3 weeks'
    }
 }

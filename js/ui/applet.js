@@ -10,6 +10,8 @@ const AppletManager = imports.ui.appletManager;
 const Gtk = imports.gi.Gtk;
 const Util = imports.misc.util;
 const Pango = imports.gi.Pango;
+const Mainloop = imports.mainloop;
+const Flashspot = imports.ui.flashspot;
 
 const COLOR_ICON_HEIGHT_FACTOR = .875;  // Panel height factor for normal color icons
 const PANEL_FONT_DEFAULT_HEIGHT = 11.5; // px
@@ -177,7 +179,21 @@ Applet.prototype = {
         // Implemented by Applets        
     },
     
-    on_applet_added_to_panel: function() {       
+    on_applet_added_to_panel: function(userEnabled) {
+        if (userEnabled) {
+            let [x, y] = this.actor.get_transformed_position();
+            let [w, h] = this.actor.get_transformed_size();
+            h = Math.max(h, this.panelHeight);
+
+            let flashspot = new Flashspot.Flashspot({ x : x, y : y, width: w, height: h});
+            flashspot.fire();
+            let timeoutId = Mainloop.timeout_add(300, Lang.bind(this, function() {
+                let flashspot = new Flashspot.Flashspot({ x : x, y : y, width: w, height: h});
+                flashspot.fire();
+                Mainloop.source_remove(timeoutId);
+                return false;
+            }));
+        }
     },
 
     // Optionally implemented by Applets,

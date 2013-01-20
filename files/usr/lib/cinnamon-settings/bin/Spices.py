@@ -311,13 +311,17 @@ class Spice_Harvester:
         self.progresslabel.set_text(_("Installing %s...") % title)
         self.progressbar.set_fraction(0)
         
+        executable_files = ['settings.py']
+
         fd, filename = tempfile.mkstemp()
         f = os.fdopen(fd, 'wb')
         try:
             self.download(f, filename)
             zip = zipfile.ZipFile(filename)
             zip.extractall(os.path.join(self.install_folder, uuid), self.get_members(zip))
-
+            for file in self.get_members(zip):
+                if file.filename in executable_files:
+                    os.chmod(os.path.join(self.install_folder, uuid, file.filename), 0o755)
         except:
             return False
 

@@ -156,7 +156,8 @@ class AppletViewSidePage (SidePage):
         getmore_vbox = Gtk.VBox()
         getmore_vbox.set_border_width(0)
 
-        notebook.append_page(getmore_vbox, Gtk.Label(_("Get more online")))
+        getmore_label = Gtk.Label(_("Get more online"))
+        notebook.append_page(getmore_vbox, getmore_label)
         notebook.connect("switch-page", self.on_page_changed)
 
         self.gm_combosort = Gtk.ComboBox()
@@ -258,8 +259,11 @@ class AppletViewSidePage (SidePage):
         self.treeview.get_selection().connect("changed", lambda x: self._selection_changed());
 
         self.install_list = []
-        self.spices = Spice_Harvester('applets', self.window, self.builder, self.on_enable_new_applet)
         
+        self.spices = Spice_Harvester('applets', self.window, self.builder, self.on_enable_new_applet)
+        if not self.spices.get_webkit_enabled():
+            getmore_label.set_sensitive(False)
+            reload_button.set_sensitive(False)
 
     def _filter_toggle(self, widget):
         if widget == self.activeButton:
@@ -527,7 +531,8 @@ class AppletViewSidePage (SidePage):
         self.enable_applet(uuid)
 
     def load_spices(self, force=False):
-        self.spices.load(self.on_spice_load, force)
+        if self.spices.get_webkit_enabled():
+            self.spices.load(self.on_spice_load, force)
 
     def install_applets(self):
         if len(self.install_list) > 0:

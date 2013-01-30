@@ -101,6 +101,7 @@
     
     <key name="panel-top-height" type="i">
       <default>25</default>
+      <range min="20" />
       <_summary>Panel size</_summary>
       <_description>
         User-defined panel-height for top panel
@@ -109,6 +110,7 @@
     
     <key name="panel-bottom-height" type="i">
       <default>25</default>
+      <range min="20" />
       <_summary>Panel size</_summary>
       <_description>
         User-defined panel-height for bottom panel
@@ -337,6 +339,16 @@
       </_description>
     </key>
 
+    <key type="b" name="menu-search-filesystem">
+      <default>false</default>
+      <_summary>Enable or disable filesystem path entry in search box</_summary>
+      <_description>
+            Toggles whether pressing TAB within the search box autocompletes
+            paths within the filesystem. Matches are also shown in the 
+            application list and can be clicked to open with default handler.
+      </_description>
+    </key>
+
     <key type="i" name="number-workspaces">
         <default>2</default>
         <_summary>Number of workspaces in Cinnamon session</_summary>
@@ -412,6 +424,7 @@
     </key>
     
     <key type="i" name="workspace-osd-x">
+      <range min="5" max="95" />
       <default>50</default>
       <_summary>Workspace horizontal position (in percent of the monitor's width)</_summary>
       <_description>
@@ -420,6 +433,7 @@
     </key>
     
     <key type="i" name="workspace-osd-y">
+      <range min="5" max="95" />
       <default>50</default>
       <_summary>Workspace vertical position (in percent of the monitor's height)</_summary>
       <_description>
@@ -524,6 +538,12 @@
     <key type="b" name="enable-edge-flip">
       <default>false</default>
       <_summary>Whether edge flip is enabled</_summary>
+    </key>
+
+    <key type="i" name="edge-flip-delay">
+      <default>1000</default>
+      <summary>Duration of the delay before switching the workspace</summary>
+      <description>Duration of the delay (in milliseconds)</description>
     </key>
 
     <child name="calendar" schema="org.cinnamon.calendar"/>

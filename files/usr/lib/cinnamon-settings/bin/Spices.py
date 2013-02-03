@@ -22,6 +22,7 @@ try:
     import zipfile
     import string
     import shutil
+    import subprocess
 except Exception, detail:
     print detail
     sys.exit(1)
@@ -32,12 +33,32 @@ except ImportError:
     import simplejson as json
 
 home = os.path.expanduser("~")
+locale_inst = '%s/.local/share/locale' % home
 
 URL_SPICES_HOME = "http://cinnamon-spices.linuxmint.com"
 URL_SPICES_APPLET_LIST = URL_SPICES_HOME + "/applets/json"
 URL_SPICES_THEME_LIST = URL_SPICES_HOME + "/themes/list_json"
 URL_SPICES_DESKLET_LIST = URL_SPICES_HOME + "/desklets/list_json"
 URL_SPICES_EXTENSION_LIST = URL_SPICES_HOME + "/extensions/list_json"
+
+
+def removeEmptyFolders(path):
+    if not os.path.isdir(path):
+        return
+
+    # remove empty subfolders
+    files = os.listdir(path)
+    if len(files):
+        for f in files:
+            fullpath = os.path.join(path, f)
+            if os.path.isdir(fullpath):
+                removeEmptyFolders(fullpath)
+
+    # if folder empty, delete it
+    files = os.listdir(path)
+    if len(files) == 0:
+        print "Removing empty folder:", path
+        os.rmdir(path)
 
 class Spice_Harvester:
     def __init__(self, collection_type, window, builder, onActivate=None):
@@ -314,16 +335,27 @@ class Spice_Harvester:
         self.progressbar.set_fraction(0)
         
         executable_files = ['settings.py']
-
+        
         fd, filename = tempfile.mkstemp()
         f = os.fdopen(fd, 'wb')
         try:
             self.download(f, filename)
+            dest = os.path.join(self.install_folder, uuid)
             zip = zipfile.ZipFile(filename)
-            zip.extractall(os.path.join(self.install_folder, uuid), self.get_members(zip))
+            zip.extractall(dest, self.get_members(zip))
             for file in self.get_members(zip):
                 if file.filename in executable_files:
-                    os.chmod(os.path.join(self.install_folder, uuid, file.filename), 0o755)
+                    os.chmod(os.path.join(dest, file.filename), 0o755)
+                elif file.filename[:3] == 'po/':
+                    parts = os.path.splitext(file.filename)
+                    if parts[1] == '.po':
+                       this_locale_dir = os.path.join(locale_inst, parts[0][3:], 'LC_MESSAGES')
+                       self.progresslabel.set_text(_("Installing translations for %s...") % title)
+                       rec_mkdir(this_locale_dir)
+                       #print "/usr/bin/msgfmt -c %s -o %s" % (os.path.join(dest, file.filename), os.path.join(this_locale_dir, '%s.mo' % uuid))
+                       subprocess.call(["msgfmt", "-c", os.path.join(dest, file.filename), "-o", os.path.join(this_locale_dir, '%s.mo' % uuid)])
+                       self.progresslabel.set_text(_("Installing %s...") % title)
+
         except:
             return False
 
@@ -342,6 +374,15 @@ class Spice_Harvester:
         self.progress_bar_pulse()
 
         shutil.rmtree(os.path.join(self.install_folder, uuid))
+
+        # Uninstall spice's localization files, if any
+        if (os.path.exists(locale_inst)):
+            i19_folders = os.listdir(locale_inst)
+            for i19_folder in i19_folders:
+                if os.path.isfile(os.path.join(locale_inst, i19_folder, 'LC_MESSAGES', "%s.mo" % uuid)):
+                    os.remove(os.path.join(locale_inst, i19_folder, 'LC_MESSAGES', "%s.mo" % uuid))
+                # Clean-up this locale folder
+                removeEmptyFolders(os.path.join(locale_inst, i19_folder))
 
         self.progress_button_close.set_sensitive(True)
         self.progress_window.hide()

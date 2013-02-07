@@ -7,6 +7,7 @@ const Cinnamon = imports.gi.Cinnamon;
 const Main = imports.ui.main;
 const Applet = imports.ui.applet;
 const Extension = imports.ui.extension;
+const DBus = imports.dbus;
 
 // Maps uuid -> metadata object
 var appletMeta;
@@ -216,9 +217,26 @@ function removeAppletFromPanels(appletDefinition) {
             applet._panelLocation.remove_actor(applet.actor);
             applet._panelLocation = null;
         }
-        
+        _removeAppletConfigFile(appletDefinition.uuid, appletDefinition.appletId);
+
         delete applet._extension._loadedDefinitions[appletDefinition.appletId];
         delete appletObj[appletDefinition.appletId];
+    }
+}
+
+function _removeAppletConfigFile(uuid, instanceId) {
+    let config_path = (GLib.get_home_dir() + "/" +
+                               ".cinnamon" + "/" +
+                                 "configs" + "/" +
+                                      uuid + "/" +
+                                instanceId + ".json");
+    let file = Gio.File.new_for_path(config_path);
+    if (file.query_exists(null)) {
+        try {
+            file.delete(null, null);
+        } catch (e) {
+            global.logError("Problem removing applet config file during cleanup.  UUID is " + uuid + " and filename is " + config_path);
+        }
     }
 }
 
@@ -321,7 +339,7 @@ function createApplet(extension, appletDefinition) {
 
     appletObj[appletId] = applet;
     applet._uuid = extension.uuid;
-    applet._appletId = appletId;
+    applet.instanceId = appletId;  // In case the applet's constructor isn't catching it
 
     applet.finalizeContextMenu();
 
@@ -375,7 +393,7 @@ function saveAppletsPositions() {
                 let appletOrder;
                 if (applet._newOrder != null) appletOrder = applet._newOrder;
                 else appletOrder = applet._order;
-                if (appletZone == zone) applets.push(panel_string+":"+zone_string+":"+appletOrder+":"+applet._uuid+":"+applet._appletId);
+                if (appletZone == zone) applets.push(panel_string+":"+zone_string+":"+appletOrder+":"+applet._uuid+":"+applet.instanceId);
             }
         }
     }
@@ -401,4 +419,30 @@ function updateAppletPanelHeights(force_recalc) {
 // Deprecated, kept for compatibility reasons
 function _find_applet(uuid) {
     return Extension.findExtensionDirectory(uuid, Extension.Type.APPLET);
+}
+
+function get_object_for_instance (appletId) {
+    if (appletId in appletObj) {
+        return appletObj[appletId];
+    } else {
+        return null;
+    }
+}
+
+function get_object_for_uuid (uuid) {
+    for (let instanceid in appletObj) {
+        if (appletObj[instanceid]._uuid == uuid) {
+            return appletObj[instanceid]
+        }
+    }
+    return null;
+}
+
+function get_num_instances_for_applet (uuid) {
+    if (uuid in appletMeta) {
+        if ("max-instances" in appletMeta[uuid]) {
+            return parseInt(appletMeta[uuid]["max-instances"]);
+       }
+    }
+    return -1;
 }

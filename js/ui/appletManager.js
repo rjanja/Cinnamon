@@ -444,5 +444,5 @@ function get_num_instances_for_applet (uuid) {
             return parseInt(appletMeta[uuid]["max-instances"]);
        }
     }
-    return -1;
+    return 1;
 }
